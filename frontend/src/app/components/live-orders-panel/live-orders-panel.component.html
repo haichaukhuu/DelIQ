@@ -1,0 +1,212 @@
+<mat-card class="dashboard-panel-card">
+  <!-- HEADER & SIMULATE BUTTON -->
+  <div class="panel-header-row">
+    <div>
+      <h2 class="section-heading">
+        <mat-icon>local_shipping</mat-icon>
+        Live Order Tracking, Issue Status & Resolution Queue
+      </h2>
+      <p class="section-subtitle">
+        Unified real-time view of every delivery order, its telemetry across ERP/WMS/TMS/Carriers,
+        and whether the AI Engine or a Human Employee is resolving its issue
+      </p>
+    </div>
+
+    <div class="header-actions-group">
+      <app-status-badge
+        [label]="filteredOrderAndIssueList().length + ' Orders Shown'"
+        tone="dark"
+      />
+      <button mat-stroked-button class="simulate-issue-btn" (click)="toggleIssueSimulator()">
+        <mat-icon>{{ isIssueSimulatorExpanded() ? 'expand_less' : 'add_alert' }}</mat-icon>
+        {{ isIssueSimulatorExpanded() ? 'Close Simulator' : 'Report / Simulate Issue' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- STABLE FIXED-LAYOUT FILTER BAR (Never changes width on selection) -->
+  <div
+    class="stable-filter-bar"
+    role="group"
+    aria-label="Filter orders by issue and resolution handler status"
+  >
+    @for (item of filterOptionButtons(); track item.filterKey) {
+      <button
+        type="button"
+        class="filter-chip-button"
+        [class.active-filter-chip]="selectedQueueFilter() === item.filterKey"
+        [attr.aria-pressed]="selectedQueueFilter() === item.filterKey"
+        (click)="setQueueFilter(item.filterKey)"
+      >
+        <span class="filter-chip-label">{{ item.label }}</span>
+        <span class="filter-chip-count">{{ item.count }}</span>
+      </button>
+    }
+  </div>
+
+  <!-- INLINE ISSUE CAPTURE / AI ENGINE TRIGGER -->
+  @if (isIssueSimulatorExpanded()) {
+    <div class="inline-capture-box">
+      <div class="capture-header">
+        <strong>Trigger AI Engine Triage on an Order</strong>
+        <app-status-badge label="AI Engine Placeholder" tone="blue" iconName="auto_awesome" />
+      </div>
+
+      <div class="capture-fields-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Target Order</mat-label>
+          <mat-select
+            [ngModel]="selectedOrderIdForReport()"
+            (ngModelChange)="selectedOrderIdForReport.set($event)"
+          >
+            @for (order of stateService.deliveryOrders(); track order.orderId) {
+              <mat-option [value]="order.orderId">
+                {{ order.orderId }} — {{ order.customerName }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Issue Category</mat-label>
+          <mat-select
+            [ngModel]="selectedIssueCategory()"
+            (ngModelChange)="selectedIssueCategory.set($event)"
+          >
+            @for (category of issueCategories; track category) {
+              <mat-option [value]="category">{{ category }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-span">
+          <mat-label>Issue Description</mat-label>
+          <input
+            matInput
+            [ngModel]="issueDescriptionInput()"
+            (ngModelChange)="issueDescriptionInput.set($event)"
+          />
+        </mat-form-field>
+      </div>
+
+      <button
+        mat-flat-button
+        class="approve-execute-button full-width-btn"
+        (click)="triggerNewIssueSimulation()"
+      >
+        <mat-icon>bolt</mat-icon>
+        Submit Issue to AI Engine
+      </button>
+    </div>
+  }
+
+  <!-- UNIFIED ORDER + ISSUE RESOLUTION CARDS -->
+  <div class="orders-scroll-list">
+    @for (entry of filteredOrderAndIssueList(); track entry.order.orderId) {
+      <div
+        class="unified-order-issue-card"
+        [class]="getCardBorderAccentClass(entry.linkedIssue?.handlerMode)"
+        [class.selected-order-card]="stateService.selectedOrderId() === entry.order.orderId"
+        (click)="onSelectOrderCard(entry.order.orderId)"
+        tabindex="0"
+        role="button"
+        (keydown.enter)="onSelectOrderCard(entry.order.orderId)"
+      >
+        <!-- PART 1: ORDER HEADER & OVERALL HEALTH -->
+        <div class="order-top-line">
+          <div class="order-id-and-customer">
+            <strong class="order-id-text">{{ entry.order.orderId }}</strong>
+            <span class="customer-name">{{ entry.order.customerName }}</span>
+            <span class="segment-tag">{{ entry.order.customerSegment }}</span>
+          </div>
+
+          <div class="order-top-right-badges">
+            <app-status-badge
+              [label]="'Feed: ' + entry.order.dataFreshness"
+              [tone]="entry.order.dataFreshness === 'Status Unknown' ? 'red' : 'neutral'"
+            />
+            <app-status-badge
+              [label]="entry.order.orderHealthStatus"
+              [tone]="getOrderHealthBadgeTone(entry.order.orderHealthStatus)"
+            />
+          </div>
+        </div>
+
+        <div class="order-meta-line">
+          <span>
+            <strong>Site:</strong> {{ entry.order.destinationCity }} · <strong>SLA Window:</strong>
+            {{ entry.order.promisedDeliveryWindow }} · <strong>Items:</strong>
+            {{ entry.order.itemsSummary }}
+          </span>
+          <strong class="order-value-text">€{{ entry.order.orderValueEuros }}</strong>
+        </div>
+
+        <!-- PART 2: LIVE 4-SYSTEM TELEMETRY MINI GRID -->
+        <div class="order-systems-mini-grid">
+          <div class="mini-sys-item">
+            <span class="sys-key">ERP:</span>
+            <span class="sys-val">{{ entry.order.erpStatusSummary }}</span>
+          </div>
+          <div class="mini-sys-item">
+            <span class="sys-key">WMS:</span>
+            <span class="sys-val">{{ entry.order.wmsStatusSummary }}</span>
+          </div>
+          <div class="mini-sys-item">
+            <span class="sys-key">TMS:</span>
+            <span class="sys-val">{{ entry.order.tmsStatusSummary }}</span>
+          </div>
+          <div class="mini-sys-item">
+            <span class="sys-key">{{ entry.order.carrierName }}:</span>
+            <span class="sys-val">{{ entry.order.carrierStatusSummary }}</span>
+          </div>
+        </div>
+
+        <!-- PART 3: EMBEDDED ISSUE & RESOLUTION STATUS (AI VS HUMAN EMPLOYEE) -->
+        @if (entry.linkedIssue; as issue) {
+          <div class="embedded-issue-resolution-box">
+            <div class="issue-box-header">
+              <app-resolution-actor-indicator
+                [handlerMode]="issue.handlerMode"
+                [resolutionState]="issue.resolutionState"
+              />
+              <app-status-badge
+                [label]="'Urgency: ' + issue.urgencyEvaluation.totalScoreOutOf100 + '/100'"
+                [tone]="issue.urgencyEvaluation.totalScoreOutOf100 >= 80 ? 'dark' : 'neutral'"
+              />
+            </div>
+
+            <div class="issue-box-title">
+              <strong>{{ issue.issueId }}:</strong> {{ issue.issueTitle }}
+            </div>
+
+            <div class="issue-box-footer">
+              <span class="owner-label">
+                <mat-icon class="inline-small-icon">badge</mat-icon>
+                Resolving Actor: <strong>{{ issue.assignedEmployeeOrAgentName }}</strong>
+              </span>
+
+              <span class="sla-clock-badge" [class.sla-imminent]="issue.isSlaBreachImminent">
+                <mat-icon class="inline-small-icon">schedule</mat-icon>
+                SLA: {{ issue.remainingSlaCountdownText }}
+              </span>
+            </div>
+          </div>
+        } @else {
+          <div class="healthy-order-status-bar">
+            <span class="healthy-label">
+              <mat-icon class="inline-small-icon">check_circle</mat-icon>
+              No Active Delivery Exceptions — Order Proceeding on Schedule
+            </span>
+            <button
+              mat-stroked-button
+              class="quick-simulate-btn"
+              (click)="toggleIssueSimulator(entry.order.orderId, $event)"
+            >
+              Simulate Issue on {{ entry.order.orderId }}
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</mat-card>

@@ -1,0 +1,91 @@
+<mat-card class="activity-log-card">
+  <div class="card-section-header">
+    <div>
+      <h2 class="section-heading">
+        <mat-icon>history_edu</mat-icon>
+        Live AI & Employee Resolution Activity Log
+      </h2>
+      <p class="section-subtitle">
+        Continuous audit trail of every issue resolved by the AI Engine or Human Employees
+      </p>
+    </div>
+
+    <div class="log-summary-pills">
+      <app-status-badge
+        [label]="stateService.resolutionLogs().length + ' Total Actions Logged'"
+        tone="dark"
+      />
+      <app-status-badge
+        [label]="humanOverrideCount() + ' Human Overrides'"
+        tone="amber"
+      />
+    </div>
+  </div>
+
+  <div class="table-scroll-container">
+    <table
+      mat-table
+      [dataSource]="stateService.resolutionLogs()"
+      class="deliq-log-table"
+    >
+      <ng-container matColumnDef="logId">
+        <th mat-header-cell *matHeaderCellDef>Log & Time</th>
+        <td mat-cell *matCellDef="let log">
+          <strong>{{ log.logId }}</strong>
+          <div class="sub-text">{{ log.timestampText }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="issueAndOrder">
+        <th mat-header-cell *matHeaderCellDef>Issue & Order</th>
+        <td mat-cell *matCellDef="let log">
+          <strong>{{ log.issueId }}</strong>
+          <div class="sub-text">Order {{ log.orderId }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actorAndMode">
+        <th mat-header-cell *matHeaderCellDef>Resolved By (AI vs Human)</th>
+        <td mat-cell *matCellDef="let log">
+          <div class="actor-cell-stack">
+            <app-status-badge
+              [label]="log.actorType + ': ' + log.actorName"
+              [tone]="log.actorType === 'AI Engine (Autonomous)' ? 'green' : 'blue'"
+              [iconName]="log.actorType === 'AI Engine (Autonomous)' ? 'smart_toy' : 'person'"
+            />
+            <span class="sub-text">{{ log.handlerMode }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actionSummary">
+        <th mat-header-cell *matHeaderCellDef>Resolution Action Executed</th>
+        <td mat-cell *matCellDef="let log">{{ log.actionSummary }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="overrideStatus">
+        <th mat-header-cell *matHeaderCellDef>AI Alignment</th>
+        <td mat-cell *matCellDef="let log">
+          @if (log.wasAiRecommendationOverridden) {
+            <app-status-badge label="Overridden by Employee" tone="amber" />
+            <div class="sub-text">{{ log.overrideReasonText }}</div>
+          } @else {
+            <app-status-badge label="Aligned with AI Engine" tone="green" />
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="rootCause">
+        <th mat-header-cell *matHeaderCellDef>Root Cause & Carrier</th>
+        <td mat-cell *matCellDef="let log">
+          <strong>{{ log.rootCauseCategory }}</strong>
+          <div class="sub-text">{{ log.carrierName }} · {{ log.affectedSkuName }}</div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  </div>
+</mat-card>
+
