@@ -1,3 +1,16 @@
 import { Routes } from '@angular/router';
+import { ControlShellComponent } from './components/dashboard-shell/control-shell.component';
+import { DashboardListComponent } from './components/dashboard/dashboard-list.component';
 
-export const routes: Routes = [];
+export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'control/dashboard' },
+  {
+    path: 'control',
+    component: ControlShellComponent,
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: 'dashboard', component: DashboardListComponent },
+    ],
+  },
+  { path: '**', redirectTo: 'control/dashboard' },
+];

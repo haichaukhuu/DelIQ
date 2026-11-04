@@ -1,0 +1,41 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">Del<span class="hi">I</span>Q</div>
+      <button class="tog" (click)="toggleSidebar()" aria-label="Collapse sidebar">«</button>
+    </div>
+
+    <nav class="nav">
+      <a routerLink="/control/dashboard" routerLinkActive="on">
+        <span class="ic">▦</span>
+        <span class="lbl">Dashboard</span>
+      </a>
+      <a class="disabled-nav-item" aria-disabled="true">
+        <span class="ic">◔</span>
+        <span class="lbl">Analytics</span>
+      </a>
+      <a class="disabled-nav-item" aria-disabled="true">
+        <span class="ic">⚙</span>
+        <span class="lbl">Settings</span>
+      </a>
+    </nav>
+
+    <div class="who">
+      <div class="av">D</div>
+      <span>Desmond<br /><small>Dispatcher, Jönköping DC</small></span>
+    </div>
+
+    <button class="out" type="button" aria-label="Log out (demo only)">
+      <span class="ic">⎋</span><span class="lbl">Log out</span>
+    </button>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <h1>Control Tower Dashboard</h1>
+      <button class="uic" (click)="toggleTheme()" aria-label="Toggle light/dark theme">☾</button>
+    </header>
+
+    <router-outlet />
+  </main>
+</div>

@@ -1,0 +1,96 @@
+<div class="ks" [class.on]="store.killSwitch()">Kill switch is on: all AI actions are paused and every case needs a human.</div>
+
+<div class="filters">
+  <input placeholder="Search order, customer, carrier" [ngModel]="store.query()" (ngModelChange)="store.query.set($event)" aria-label="Search" />
+  <select aria-label="Filter by path" [ngModel]="store.filterPath()" (ngModelChange)="store.filterPath.set($event)">
+    <option value="">All paths</option>
+    <option value="A">Path A · Green</option>
+    <option value="B">Path B · Amber</option>
+    <option value="C">Path C · Red</option>
+  </select>
+  <select aria-label="Filter by status" [ngModel]="store.filterStatus()" (ngModelChange)="store.filterStatus.set($event)">
+    <option value="">All statuses</option>
+    <option *ngFor="let s of store.statuses()" [value]="s">{{ s }}</option>
+  </select>
+  <select aria-label="Filter by issue type" [ngModel]="store.filterType()" (ngModelChange)="store.filterType.set($event)">
+    <option value="">All issue types</option>
+    <option *ngFor="let t of store.issueTypes()" [value]="t">{{ t }}</option>
+  </select>
+</div>
+
+<div class="cnt">{{ count() }} orders</div>
+
+<div id="list">
+  <article class="card" *ngFor="let t of store.filtered()" [ngClass]="t.path">
+    <button class="top" type="button" (click)="store.toggleOpen(t.id)" [attr.aria-expanded]="store.openId()===t.id">
+      <div>
+        <div class="id">{{ t.id }} · {{ t.tier }}</div>
+        <div class="nm">{{ t.name }}</div>
+      </div>
+      <div class="badges">
+        <span class="b" [ngClass]="{'pA': t.path==='A','pB': t.path==='B','pC': t.path==='C'}">{{ t.path==='A' ? 'Path A · Autonomous' : t.path==='B' ? 'Path B · Human approval' : 'Path C · Human-led' }}</span>
+        <span class="b" [ngClass]="{'sev-Critical': t.sev==='Critical','sev-High': t.sev==='High','sev-Medium': t.sev==='Medium','sev-Low': t.sev==='Low'}">{{ t.sev }}</span>
+      </div>
+      <div class="main">
+        <span>Issue <b>{{ t.type }}</b></span>
+        <span>Carrier <b>{{ t.carrier }}</b></span>
+        <span>Order value <b>€{{ t.val | number }}</b></span>
+        <span>SLA left <b>{{ formatSla(t.slaMinutes) }}</b></span>
+        <span>Urgency <b>{{ t.urgencyScore }}/100</b></span>
+        <span>Status <b>{{ t.status }}</b></span>
+      </div>
+      <div class="main">{{ t.info }}</div>
+      <div class="hint"><span>{{ store.openId()===t.id ? 'Hide' : 'Click to view' }} solution recommendation &amp; history</span><span>{{ store.openId()===t.id ? '▴' : '▾' }}</span></div>
+    </button>
+
+    <div class="det" *ngIf="store.openId()===t.id">
+      <div>
+        <div class="note" [ngClass]="t.path">{{ t.path==='A' ? 'AI handled this low-risk case on its own. Every step is in the audit log.' : t.path==='B' ? 'AI prepared this recommendation. Pick a fix and approve with one click.' : 'High-risk case. AI only prepared a brief. A person must own and decide.' }}</div>
+
+        <h3>Recommended fixes, ranked</h3>
+        <label class="rec" *ngFor="let r of t.recs; let i = index" [ngClass]="{'sel': (store.picks()[t.id] ?? 0) === i}">
+          <input type="radio" name="r{{t.id}}" [checked]="(store.picks()[t.id] ?? 0) === i" (change)="store.setPick(t.id, i)" [disabled]="t.path!=='B' || t.status!=='Awaiting approval'" />
+          <span>
+            <b>{{ r.title }}</b>
+            <small>Speed {{ r.speedText }} · Cost {{ r.costText }} · Chance to meet deadline {{ r.successProbability }}%</small>
+          </span>
+        </label>
+
+        <h3>Draft message to customer</h3>
+        <div class="draft">{{ t.draft }}</div>
+
+        <div class="act" *ngIf="t.path==='B'">
+          <button class="btn ok" type="button" (click)="approve(t.id)" [disabled]="t.status==='Resolved'">Approve</button>
+          <button class="btn no" type="button" (click)="toggleReject(t.id)">Reject</button>
+          <div class="reason" [class.on]="store.rejectedOpen()[t.id]">
+            <select #rs>
+              <option>Cost too high</option>
+              <option>Customer constraint</option>
+              <option>Carrier capacity limited</option>
+            </select>
+            <button class="btn" type="button" (click)="reject(t.id, rs.value)" data-rej>Confirm</button>
+          </div>
+        </div>
+
+        <div class="act" *ngIf="t.path==='C'">
+          <button class="btn pri" type="button" (click)="own(t.id)" *ngIf="t.status==='Human-led'">Take ownership</button>
+          <button class="btn ok" type="button" (click)="store.markResolved(t.id)" *ngIf="t.status==='In progress'">Mark resolved</button>
+          <span class="id" *ngIf="t.status!=='Human-led' && t.status!=='In progress'">Status: {{ t.status }}</span>
+        </div>
+      </div>
+
+      <div>
+        <h3>Ticket history</h3>
+        <ul class="tl">
+          <li *ngFor="let e of t.tl" [ngClass]="e.cls">
+            <time>{{ e.time }} · {{ e.actor }}</time>{{ e.text }}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <div class="empty" *ngIf="!store.filtered().length">No orders match. Clear a filter to see more.</div>
+</div>
+
+<div class="toast" [class.on]="toastText()">{{ toastText() }}</div>

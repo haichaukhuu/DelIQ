@@ -1,5 +1,27 @@
 @use '@angular/material' as mat;
 
+:root {
+  --bg: #f5f3ef;
+  --panel: #ffffff;
+  --ink: #16302f;
+  --mut: #5d716f;
+  --line: #dde4e1;
+  --side: #17403e;
+  --sideink: #cfe0db;
+  --mint: #dde9e5;
+  --coral: #ff6459;
+}
+
+:root[data-theme='dark'] {
+  --bg: #0f1c1b;
+  --panel: #172928;
+  --ink: #e6f0ed;
+  --mut: #9bb1ad;
+  --line: #2a403e;
+  --side: #0b1514;
+  --mint: #1e3433;
+}
+
 html {
   @include mat.theme((
     color: (
@@ -23,8 +45,8 @@ body {
   height: 100%;
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f1f5f3;
-  color: #0f172a;
+  background-color: var(--bg);
+  color: var(--ink);
   overflow-x: hidden;
 }
 
