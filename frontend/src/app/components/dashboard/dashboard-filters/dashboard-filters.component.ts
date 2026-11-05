@@ -7,7 +7,6 @@ import { TicketPath, TicketStatus } from '../../../models/ticket.model';
 
 @Component({
   selector: 'app-dashboard-filters',
-  standalone: true,
   imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   templateUrl: './dashboard-filters.component.html',
   styleUrl: './dashboard-filters.component.scss',

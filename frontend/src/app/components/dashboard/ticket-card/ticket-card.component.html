@@ -65,17 +65,17 @@
         @if (ticket.path === 'B') {
           <div class="act">
             <button mat-flat-button color="primary" class="btn ok" type="button" (click)="approve.emit()" [disabled]="ticket.status === 'Resolved'">Approve</button>
-            <button mat-stroked-button color="warn" class="btn no" type="button" (click)="rejectToggle.emit()">Reject</button>
+            <button mat-stroked-button color="warn" class="btn no" type="button" (click)="rejectToggle.emit()" [disabled]="ticket.status === 'Resolved'">Reject</button>
             <div class="reason" [class.on]="isRejectOpen">
               <mat-form-field appearance="outline">
                 <mat-label>Reason</mat-label>
-                <mat-select #reason>
+                <mat-select #reason value="Cost too high">
                   <mat-option value="Cost too high">Cost too high</mat-option>
                   <mat-option value="Customer constraint">Customer constraint</mat-option>
                   <mat-option value="Carrier capacity limited">Carrier capacity limited</mat-option>
                 </mat-select>
               </mat-form-field>
-              <button mat-stroked-button class="btn" type="button" (click)="reject.emit(reason.value)" data-rej>Confirm</button>
+              <button mat-stroked-button class="btn" type="button" (click)="reject.emit(reason.value || 'Cost too high')" data-rej>Confirm</button>
             </div>
           </div>
         }

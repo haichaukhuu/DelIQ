@@ -9,13 +9,13 @@ export interface AiTriageEngineContract {
   buildApprovalTimelineEntries(
     ticket: TicketItem,
     selectedRecommendationIndex: number,
-    timestampText: string
+    timestampText: string,
   ): TimelineEntry[];
 
   buildRejectionTimelineEntries(
     ticket: TicketItem,
     rejectionReason: string,
-    timestampText: string
+    timestampText: string,
   ): TimelineEntry[];
 }
 

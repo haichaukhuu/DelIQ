@@ -28,7 +28,7 @@
       (reject)="reject(ticket.id, $event)"
       (rejectToggle)="toggleReject(ticket.id)"
       (takeOwnership)="own(ticket.id)"
-      (markResolved)="store.markResolved(ticket.id)"
+      (markResolved)="resolve(ticket.id)"
     />
   } @empty {
     <div class="empty">No orders match. Clear a filter to see more.</div>

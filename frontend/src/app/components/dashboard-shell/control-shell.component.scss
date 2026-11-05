@@ -1,20 +1,7 @@
-.app-shell.sidebar-min {
-  grid-template-columns: 68px 1fr;
-}
-.app-shell.sidebar-min .logo,
-.app-shell.sidebar-min .lbl {
-  display: none;
-}
-:root {
-  --bg: #f5f3ef;
-  --panel: #fff;
-  --ink: #16302f;
-  --mut: #5d716f;
-  --line: #dde4e1;
-  --side: #17403e;
-  --sideink: #cfe0db;
-  --mint: #dde9e5;
-  --coral: #ff6459;
+.app-shell {
+  display: grid;
+  grid-template-columns: 236px 1fr;
+  height: 100dvh;
 }
 .app-shell {
   display: grid;
@@ -48,27 +35,13 @@
   color: var(--coral);
 }
 .tog {
-  color: var(--sideink);
+  background: none;
   border: 1px solid #ffffff30;
   border-radius: 8px;
-}
-.sidebar-collapsed .brand {
-  justify-content: center;
-  padding: 0;
-}
-.sidebar-collapsed .logo,
-.sidebar-collapsed .lbl,
-.sidebar-collapsed .who span {
-  display: none;
-}
-.sidebar-collapsed .nav a,
-.sidebar-collapsed .out {
-  justify-content: center;
-  padding-inline: 0;
-}
-.sidebar-collapsed .who {
-  justify-content: center;
-  padding-inline: 0;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  color: var(--sideink);
 }
 .nav {
   display: flex;
@@ -128,10 +101,14 @@
   flex: none;
 }
 .out {
-  justify-content: flex-start;
+  background: none;
+  border: 0;
   color: inherit;
-  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
   padding: 10px 12px;
+  border-radius: 10px;
 }
 .out:hover {
   background: #ffffff12;
@@ -149,21 +126,35 @@
   margin-bottom: 18px;
   gap: 12px;
 }
+.uic {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.uic {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
 @media (max-width: 860px) {
   .app-shell {
-    grid-template-columns: 68px minmax(0, 1fr);
+    grid-template-columns: 68px 1fr;
   }
   .logo,
-  .lbl,
-  .who span {
+  .lbl {
     display: none;
-  }
-  .nav a,
-  .out {
-    justify-content: center;
-  }
-  .who {
-    justify-content: center;
   }
 }
 
