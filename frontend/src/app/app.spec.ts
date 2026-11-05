@@ -33,8 +33,7 @@ describe('App & Control Tower Dashboard', () => {
 
   it('should approve a Path B ticket and log timeline entries via AI_TRIAGE_ENGINE', () => {
     const store = TestBed.inject(NewDashboardStore);
-    const initialTimelineCount =
-      store.tickets().find((t) => t.id === 'DQ-2038')?.tl.length ?? 0;
+    const initialTimelineCount = store.tickets().find((t) => t.id === 'DQ-2038')?.tl.length ?? 0;
 
     store.setPick('DQ-2038', 1);
     const approved = store.approve('DQ-2038');

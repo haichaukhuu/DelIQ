@@ -1,9 +1,16 @@
-<div class="app-shell" [class.sidebar-min]="isSidebarCollapsed()">
+<div class="app-shell" [class.sidebar-collapsed]="isSidebarCollapsed()">
   <aside class="sidebar">
     <div class="brand">
       <div class="logo">Del<span class="hi">I</span>Q</div>
-      <button class="tog" type="button" (click)="toggleSidebar()" aria-label="Collapse sidebar">
-        {{ isSidebarCollapsed() ? '»' : '«' }}
+      <button
+        mat-icon-button
+        class="tog"
+        type="button"
+        (click)="toggleSidebar()"
+        [attr.aria-label]="isSidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-expanded]="!isSidebarCollapsed()"
+      >
+        <mat-icon>{{ isSidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
       </button>
     </div>
 
@@ -27,15 +34,22 @@
       <span class="lbl">Desmond<br /><small>Dispatcher, Jönköping DC</small></span>
     </div>
 
-    <button class="out" type="button" aria-label="Log out (demo only)">
-      <span class="ic">⎋</span><span class="lbl">Log out</span>
+    <button mat-button class="out" type="button" aria-label="Log out (demo only)">
+      <mat-icon class="ic">logout</mat-icon><span class="lbl">Log out</span>
     </button>
   </aside>
 
   <main class="content">
     <header class="topbar">
       <h1>Control Tower Dashboard</h1>
-      <button class="uic" type="button" (click)="toggleTheme()" aria-label="Toggle light/dark theme">☾</button>
+      <button
+        class="uic"
+        type="button"
+        (click)="toggleTheme()"
+        aria-label="Toggle light/dark theme"
+      >
+        ☾
+      </button>
     </header>
 
     <router-outlet />

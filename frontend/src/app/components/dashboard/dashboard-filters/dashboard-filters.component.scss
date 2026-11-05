@@ -1,0 +1,10 @@
+.filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.filters mat-form-field{width:100%}
+
+@media (max-width: 900px){
+  .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (max-width: 560px){
+  .filters{grid-template-columns:1fr}
+}

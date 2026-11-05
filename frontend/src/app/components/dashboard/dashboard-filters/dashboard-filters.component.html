@@ -1,0 +1,53 @@
+<div class="filters">
+  <mat-form-field appearance="outline">
+    <mat-label>Search orders</mat-label>
+    <input
+      matInput
+      [ngModel]="query"
+      (ngModelChange)="queryChange.emit($event)"
+      aria-label="Search order, customer, carrier"
+    />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Path</mat-label>
+    <mat-select
+      [ngModel]="filterPath"
+      (ngModelChange)="filterPathChange.emit($event)"
+      aria-label="Filter by path"
+    >
+      <mat-option value="">All paths</mat-option>
+      <mat-option value="A">Path A · Green</mat-option>
+      <mat-option value="B">Path B · Amber</mat-option>
+      <mat-option value="C">Path C · Red</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select
+      [ngModel]="filterStatus"
+      (ngModelChange)="filterStatusChange.emit($event)"
+      aria-label="Filter by status"
+    >
+      <mat-option value="">All statuses</mat-option>
+      @for (status of statuses; track status) {
+        <mat-option [value]="status">{{ status }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Issue type</mat-label>
+    <mat-select
+      [ngModel]="filterType"
+      (ngModelChange)="filterTypeChange.emit($event)"
+      aria-label="Filter by issue type"
+    >
+      <mat-option value="">All issue types</mat-option>
+      @for (type of issueTypes; track type) {
+        <mat-option [value]="type">{{ type }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>

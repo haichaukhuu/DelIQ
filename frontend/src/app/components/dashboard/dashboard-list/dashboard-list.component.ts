@@ -1,11 +1,13 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { NewDashboardStore } from '../../services/new-dashboard-store.service';
+import { DashboardFiltersComponent } from '../dashboard-filters/dashboard-filters.component';
+import { TicketCardComponent } from '../ticket-card/ticket-card.component';
+import { NewDashboardStore } from '../../../services/new-dashboard-store.service';
 
 @Component({
   selector: 'app-dashboard-list',
   imports: [CommonModule, FormsModule],
+  standalone: true,
+  imports: [DashboardFiltersComponent, TicketCardComponent],
   templateUrl: './dashboard-list.component.html',
   styleUrl: './dashboard-list.component.scss',
 })
@@ -40,9 +42,7 @@ export class DashboardListComponent {
   }
 
   formatSla(minutes: number): string {
-    return minutes >= 60
-      ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-      : `${minutes}m`;
+    return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`;
   }
 
   own(id: string): void {
