@@ -8,6 +8,9 @@ export type TicketStatus =
   | 'Resolved'
   | 'Rejected';
 
+export type TimelineActor = 'AI' | 'Driver' | 'Customer' | 'System' | 'Dispatcher';
+export type TimelineTone = 'ai' | 'hu' | 'no';
+
 export interface Recommendation {
   title: string;
   speedText: string; // e.g. "ETA 2h 10m" / "Today 14:00"
@@ -17,9 +20,9 @@ export interface Recommendation {
 
 export interface TimelineEntry {
   time: string; // HH:MM
-  actor: 'AI' | 'Driver' | 'Customer' | 'System' | 'Dispatcher';
+  actor: TimelineActor;
   text: string;
-  cls: 'ai' | 'hu' | 'no';
+  cls: TimelineTone;
 }
 
 export interface TicketItem {

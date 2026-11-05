@@ -1,8 +1,10 @@
-<div class="app-shell">
+<div class="app-shell" [class.sidebar-min]="isSidebarCollapsed()">
   <aside class="sidebar">
     <div class="brand">
       <div class="logo">Del<span class="hi">I</span>Q</div>
-      <button class="tog" (click)="toggleSidebar()" aria-label="Collapse sidebar">«</button>
+      <button class="tog" type="button" (click)="toggleSidebar()" aria-label="Collapse sidebar">
+        {{ isSidebarCollapsed() ? '»' : '«' }}
+      </button>
     </div>
 
     <nav class="nav">
@@ -22,7 +24,7 @@
 
     <div class="who">
       <div class="av">D</div>
-      <span>Desmond<br /><small>Dispatcher, Jönköping DC</small></span>
+      <span class="lbl">Desmond<br /><small>Dispatcher, Jönköping DC</small></span>
     </div>
 
     <button class="out" type="button" aria-label="Log out (demo only)">
@@ -33,7 +35,7 @@
   <main class="content">
     <header class="topbar">
       <h1>Control Tower Dashboard</h1>
-      <button class="uic" (click)="toggleTheme()" aria-label="Toggle light/dark theme">☾</button>
+      <button class="uic" type="button" (click)="toggleTheme()" aria-label="Toggle light/dark theme">☾</button>
     </header>
 
     <router-outlet />

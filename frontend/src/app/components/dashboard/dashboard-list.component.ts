@@ -5,7 +5,6 @@ import { NewDashboardStore } from '../../services/new-dashboard-store.service';
 
 @Component({
   selector: 'app-dashboard-list',
-  standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './dashboard-list.component.html',
   styleUrl: './dashboard-list.component.scss',
@@ -16,22 +15,27 @@ export class DashboardListComponent {
 
   readonly count = computed(() => this.store.filtered().length);
 
-  approve(id: string) {
+  approve(id: string): void {
     if (this.store.killSwitch()) {
       this.toast('Kill switch is on. Turn it off to continue');
       return;
     }
     const ok = this.store.approve(id);
-    if (ok) this.toast('Approved and executed');
+    if (ok) {
+      this.store.rejectedOpen.update((open) => ({ ...open, [id]: false }));
+      this.toast('Approved and executed');
+    }
   }
 
-  reject(id: string, reason: string) {
-    this.store.reject(id, reason);
+  reject(id: string, reason: string): void {
+    const ok = this.store.reject(id, reason);
     this.store.rejectedOpen.update((open) => ({ ...open, [id]: false }));
-    this.toast('Rejected and logged');
+    if (ok) {
+      this.toast('Rejected and logged');
+    }
   }
 
-  toggleReject(id: string) {
+  toggleReject(id: string): void {
     this.store.rejectedOpen.update((open) => ({ ...open, [id]: !open[id] }));
   }
 
@@ -41,12 +45,21 @@ export class DashboardListComponent {
       : `${minutes}m`;
   }
 
-  own(id: string) {
-    this.store.takeOwnership(id);
-    this.toast('You now own ' + id);
+  own(id: string): void {
+    const ok = this.store.takeOwnership(id);
+    if (ok) {
+      this.toast('You now own ' + id);
+    }
   }
 
-  private toast(msg: string) {
+  resolve(id: string): void {
+    const ok = this.store.markResolved(id);
+    if (ok) {
+      this.toast('Marked as resolved');
+    }
+  }
+
+  private toast(msg: string): void {
     this.toastText.set(msg);
     setTimeout(() => this.toastText.set(null), 2000);
   }

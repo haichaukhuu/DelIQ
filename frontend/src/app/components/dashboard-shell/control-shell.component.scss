@@ -1,6 +1,6 @@
-:root{--bg:#f5f3ef;--panel:#fff;--ink:#16302f;--mut:#5d716f;--line:#dde4e1;--side:#17403e;--sideink:#cfe0db;--mint:#dde9e5;--coral:#ff6459}
-
 .app-shell{display:grid;grid-template-columns:236px 1fr;height:100dvh}
+.app-shell.sidebar-min{grid-template-columns:68px 1fr}
+.app-shell.sidebar-min .logo,.app-shell.sidebar-min .lbl{display:none}
 .sidebar{background:var(--side);color:var(--sideink);display:flex;flex-direction:column;padding:16px 12px}
 .brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding:0 6px}
 .logo{font-size:26px;font-weight:700;color:#fff}.logo .hi{color:var(--coral)}

@@ -1,12 +1,23 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { MOCK_TICKETS } from '../mock-data/mock-tickets.data';
-import { TicketItem, TicketPath, TicketStatus } from '../models/ticket.model';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { AI_TRIAGE_ENGINE } from '../contracts/ai-triage-engine.contract';
+import { DELIVERY_DATA_SOURCE } from '../contracts/delivery-data-source.contract';
+import {
+  TicketItem,
+  TicketPath,
+  TicketStatus,
+  TimelineActor,
+  TimelineEntry,
+  TimelineTone,
+} from '../models';
 
-// Lightweight UI store for the new dashboard. Purely front-end; no backend calls.
+// State store for the Control Tower dashboard, decoupled from data & AI implementations via DI contracts.
 @Injectable({ providedIn: 'root' })
 export class NewDashboardStore {
-  // Source data (static)
-  readonly tickets = signal<TicketItem[]>(MOCK_TICKETS);
+  private readonly dataSource = inject(DELIVERY_DATA_SOURCE);
+  private readonly aiTriageEngine = inject(AI_TRIAGE_ENGINE);
+
+  // Source data initialized via injected data source contract
+  readonly tickets = signal<TicketItem[]>(this.dataSource.getInitialTickets());
 
   // UI state
   readonly openId = signal<string | null>(null);
@@ -24,69 +35,131 @@ export class NewDashboardStore {
 
   // Derived lists
   readonly issueTypes = computed(() => {
-    const all = this.tickets().map(t => t.type);
+    const all = this.tickets().map((t) => t.type);
     return Array.from(new Set(all));
   });
 
   readonly statuses = computed(() => {
-    const base = this.tickets().map(t => t.status);
+    const base = this.tickets().map((t) => t.status);
     const extra: TicketStatus[] = ['Resolved', 'Rejected'];
     return Array.from(new Set([...base, ...extra]));
   });
 
   readonly filtered = computed(() => {
-    const q = this.query().toLowerCase();
+    const q = this.query().trim().toLowerCase();
     const fp = this.filterPath();
     const fs = this.filterStatus();
     const ft = this.filterType();
-    return this.tickets().filter(t =>
-      (!q || (t.id + t.name + t.type + t.carrier).toLowerCase().includes(q)) &&
-      (!fp || t.path === fp) &&
-      (!fs || t.status === fs) &&
-      (!ft || t.type === ft)
+    return this.tickets().filter(
+      (t) =>
+        (!q || (t.id + t.name + t.type + t.carrier).toLowerCase().includes(q)) &&
+        (!fp || t.path === fp) &&
+        (!fs || t.status === fs) &&
+        (!ft || t.type === ft)
     );
   });
 
-  toggleOpen(id: string) {
-    this.openId.update(v => (v === id ? null : id));
+  toggleOpen(id: string): void {
+    this.openId.update((v) => (v === id ? null : id));
   }
 
-  setPick(ticketId: string, recIndex: number) {
-    this.picks.update(m => ({ ...m, [ticketId]: recIndex }));
+  setPick(ticketId: string, recIndex: number): void {
+    if (recIndex < 0) {
+      throw new Error('Recommendation index must be non-negative.');
+    }
+    this.picks.update((m) => ({ ...m, [ticketId]: recIndex }));
   }
 
-  approve(ticketId: string) {
-    if (this.killSwitch()) return false;
+  approve(ticketId: string): boolean {
+    if (this.killSwitch()) {
+      return false;
+    }
+    const targetTicket = this.tickets().find((t) => t.id === ticketId);
+    if (!targetTicket || targetTicket.status === 'Resolved') {
+      return false;
+    }
+
     const pick = this.picks()[ticketId] ?? 0;
-    this.addTimeline(ticketId, 'Dispatcher', `Approved: ${this.tickets().find(t => t.id === ticketId)!.recs[pick].title}`, 'hu');
-    this.addTimeline(ticketId, 'System', 'Action executed, customer message sent, write-back logged', 'ai');
+    const entries = this.aiTriageEngine.buildApprovalTimelineEntries(
+      targetTicket,
+      pick,
+      this.currentTimeText()
+    );
+    this.appendTimelineEntries(ticketId, entries);
     this.updateStatus(ticketId, 'Resolved');
     return true;
   }
 
-  reject(ticketId: string, reason: string) {
-    this.addTimeline(ticketId, 'Dispatcher', `Rejected recommendation. Reason: ${reason}`, 'no');
-    this.addTimeline(ticketId, 'AI', 'Generating a new ranked plan from the reason given', 'ai');
+  reject(ticketId: string, reason: string): boolean {
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      return false;
+    }
+    const targetTicket = this.tickets().find((t) => t.id === ticketId);
+    if (!targetTicket || targetTicket.status === 'Resolved') {
+      return false;
+    }
+
+    const entries = this.aiTriageEngine.buildRejectionTimelineEntries(
+      targetTicket,
+      trimmedReason,
+      this.currentTimeText()
+    );
+    this.appendTimelineEntries(ticketId, entries);
     this.updateStatus(ticketId, 'Rejected');
+    return true;
   }
 
-  takeOwnership(ticketId: string) {
+  takeOwnership(ticketId: string): boolean {
+    const targetTicket = this.tickets().find((t) => t.id === ticketId);
+    if (!targetTicket) {
+      return false;
+    }
     this.addTimeline(ticketId, 'Dispatcher', 'Took ownership of this case', 'hu');
     this.updateStatus(ticketId, 'In progress');
+    return true;
   }
 
-  markResolved(ticketId: string) {
+  markResolved(ticketId: string): boolean {
+    const targetTicket = this.tickets().find((t) => t.id === ticketId);
+    if (!targetTicket || targetTicket.status === 'Resolved') {
+      return false;
+    }
+    this.addTimeline(ticketId, 'Dispatcher', 'Marked case as resolved', 'hu');
     this.updateStatus(ticketId, 'Resolved');
+    return true;
   }
 
-  private updateStatus(ticketId: string, next: TicketStatus) {
-    this.tickets.update(list => list.map(t => (t.id === ticketId ? { ...t, status: next } : t)));
+  private updateStatus(ticketId: string, next: TicketStatus): void {
+    this.tickets.update((list) =>
+      list.map((t) => (t.id === ticketId ? { ...t, status: next } : t))
+    );
   }
 
-  private addTimeline(ticketId: string, actor: TicketItem['tl'][number]['actor'], text: string, cls: 'ai' | 'hu' | 'no') {
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    this.tickets.update(list => list.map(t => (
-      t.id === ticketId ? { ...t, tl: [...t.tl, { time, actor, text, cls }] } : t
-    )));
+  private addTimeline(
+    ticketId: string,
+    actor: TimelineActor,
+    text: string,
+    cls: TimelineTone
+  ): void {
+    const entry: TimelineEntry = {
+      time: this.currentTimeText(),
+      actor,
+      text,
+      cls,
+    };
+    this.appendTimelineEntries(ticketId, [entry]);
+  }
+
+  private appendTimelineEntries(ticketId: string, entries: TimelineEntry[]): void {
+    this.tickets.update((list) =>
+      list.map((t) =>
+        t.id === ticketId ? { ...t, tl: [...t.tl, ...entries] } : t
+      )
+    );
+  }
+
+  private currentTimeText(): string {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 }

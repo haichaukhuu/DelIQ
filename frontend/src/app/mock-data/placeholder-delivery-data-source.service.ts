@@ -1,29 +1,16 @@
 import { Injectable } from '@angular/core';
 import { DeliveryDataSourceContract } from '../contracts/delivery-data-source.contract';
-import { DeliveryIssue, DeliveryOrder, ResolutionActivityLog } from '../models';
-import { MOCK_DELIVERY_ISSUES } from './mock-delivery-issues.data';
-import { MOCK_DELIVERY_ORDERS } from './mock-delivery-orders.data';
-import { MOCK_RESOLUTION_LOGS } from './mock-resolution-logs.data';
+import { TicketItem } from '../models';
+import { MOCK_TICKETS } from './mock-tickets.data';
 
 /**
- * Placeholder data source that injects mock data into the application.
- * Replace this provider in app.config.ts when connecting the real backend API.
+ * Placeholder implementation of DeliveryDataSourceContract backed by static mock data.
+ * Replace this binding in control-tower.providers.ts when connecting to the backend API.
  */
 @Injectable()
 export class PlaceholderDeliveryDataSourceService implements DeliveryDataSourceContract {
-  getInitialOrders(): DeliveryOrder[] {
-    // TODO (Backend): Replace with HTTP GET /api/orders
-    return structuredClone(MOCK_DELIVERY_ORDERS);
-  }
-
-  getInitialIssues(): DeliveryIssue[] {
-    // TODO (Backend): Replace with HTTP GET /api/issues
-    return structuredClone(MOCK_DELIVERY_ISSUES);
-  }
-
-  getInitialResolutionLogs(): ResolutionActivityLog[] {
-    // TODO (Backend): Replace with HTTP GET /api/resolution-logs
-    return structuredClone(MOCK_RESOLUTION_LOGS);
+  getInitialTickets(): TicketItem[] {
+    // TODO (Backend): Replace with GET /api/tickets from the backend Control Tower API.
+    return structuredClone(MOCK_TICKETS);
   }
 }
-

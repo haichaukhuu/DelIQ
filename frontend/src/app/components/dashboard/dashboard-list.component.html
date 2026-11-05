@@ -61,7 +61,7 @@
 
         <div class="act" *ngIf="t.path==='B'">
           <button class="btn ok" type="button" (click)="approve(t.id)" [disabled]="t.status==='Resolved'">Approve</button>
-          <button class="btn no" type="button" (click)="toggleReject(t.id)">Reject</button>
+          <button class="btn no" type="button" (click)="toggleReject(t.id)" [disabled]="t.status==='Resolved'">Reject</button>
           <div class="reason" [class.on]="store.rejectedOpen()[t.id]">
             <select #rs>
               <option>Cost too high</option>
@@ -74,7 +74,7 @@
 
         <div class="act" *ngIf="t.path==='C'">
           <button class="btn pri" type="button" (click)="own(t.id)" *ngIf="t.status==='Human-led'">Take ownership</button>
-          <button class="btn ok" type="button" (click)="store.markResolved(t.id)" *ngIf="t.status==='In progress'">Mark resolved</button>
+          <button class="btn ok" type="button" (click)="resolve(t.id)" *ngIf="t.status==='In progress'">Mark resolved</button>
           <span class="id" *ngIf="t.status!=='Human-led' && t.status!=='In progress'">Status: {{ t.status }}</span>
         </div>
       </div>
