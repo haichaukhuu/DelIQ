@@ -1,12 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
-import { provideControlTowerDependencies } from './contracts/control-tower.providers';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideControlTowerDependencies()],
     }).compileComponents();
   });
 

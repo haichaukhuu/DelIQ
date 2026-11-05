@@ -1,21 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-control-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [MatButtonModule, MatIconModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './control-shell.component.html',
   styleUrl: './control-shell.component.scss',
 })
 export class ControlShellComponent {
-  toggleSidebar() {
-    document.body.classList.toggle('sidebar-min');
-  }
+  readonly isSidebarCollapsed = signal(false);
 
-  toggleTheme() {
-    const r = document.documentElement;
-    const dark = r.getAttribute('data-theme') === 'dark' || (!r.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
-    r.setAttribute('data-theme', dark ? 'light' : 'dark');
+  toggleSidebar(): void {
+    this.isSidebarCollapsed.update((collapsed) => !collapsed);
   }
 }

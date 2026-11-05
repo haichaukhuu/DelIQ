@@ -1,0 +1,38 @@
+<div class="ks" [class.on]="store.killSwitch()">Kill switch is on: all AI actions are paused and every case needs a human.</div>
+
+<app-dashboard-filters
+  [query]="store.query()"
+  [filterPath]="store.filterPath()"
+  [filterStatus]="store.filterStatus()"
+  [filterType]="store.filterType()"
+  [statuses]="store.statuses()"
+  [issueTypes]="store.issueTypes()"
+  (queryChange)="store.query.set($event)"
+  (filterPathChange)="store.filterPath.set($event)"
+  (filterStatusChange)="store.filterStatus.set($event)"
+  (filterTypeChange)="store.filterType.set($event)"
+/>
+
+<div class="cnt">{{ count() }} orders</div>
+
+<div id="list">
+  @for (ticket of store.filtered(); track ticket.id) {
+    <app-ticket-card
+      [ticket]="ticket"
+      [isOpen]="store.openId() === ticket.id"
+      [selectedRecommendation]="store.picks()[ticket.id] ?? 0"
+      [isRejectOpen]="store.rejectedOpen()[ticket.id] ?? false"
+      (openToggle)="store.toggleOpen(ticket.id)"
+      (recommendationChange)="store.setPick(ticket.id, $event)"
+      (approve)="approve(ticket.id)"
+      (reject)="reject(ticket.id, $event)"
+      (rejectToggle)="toggleReject(ticket.id)"
+      (takeOwnership)="own(ticket.id)"
+      (markResolved)="store.markResolved(ticket.id)"
+    />
+  } @empty {
+    <div class="empty">No orders match. Clear a filter to see more.</div>
+  }
+</div>
+
+<div class="toast" [class.on]="toastText()">{{ toastText() }}</div>
