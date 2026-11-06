@@ -7,6 +7,7 @@ export type TicketStatus =
   | 'In progress'
   | 'Resolved'
   | 'Rejected';
+export type TicketSort = 'default' | 'urgency' | 'sla' | 'value';
 
 export type TimelineActor = 'AI' | 'Driver' | 'Customer' | 'System' | 'Dispatcher';
 export type TimelineTone = 'ai' | 'hu' | 'no';

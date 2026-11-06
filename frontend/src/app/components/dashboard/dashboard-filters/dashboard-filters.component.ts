@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { TicketPath, TicketStatus } from '../../../models/ticket.model';
+import { TicketPath, TicketSort, TicketStatus } from '../../../models/ticket.model';
 
 @Component({
   selector: 'app-dashboard-filters',
@@ -16,6 +16,7 @@ export class DashboardFiltersComponent {
   @Input() filterPath: TicketPath | '' = '';
   @Input() filterStatus: TicketStatus | '' = '';
   @Input() filterType = '';
+  @Input() sort: TicketSort = 'default';
   @Input() statuses: TicketStatus[] = [];
   @Input() issueTypes: string[] = [];
 
@@ -23,4 +24,5 @@ export class DashboardFiltersComponent {
   @Output() filterPathChange = new EventEmitter<TicketPath | ''>();
   @Output() filterStatusChange = new EventEmitter<TicketStatus | ''>();
   @Output() filterTypeChange = new EventEmitter<string>();
+  @Output() sortChange = new EventEmitter<TicketSort>();
 }

@@ -63,4 +63,14 @@ describe('App & Control Tower Dashboard', () => {
     expect(store.markResolved('DQ-2041')).toBe(true);
     expect(store.tickets().find((t) => t.id === 'DQ-2041')?.status).toBe('Resolved');
   });
+
+  it('should sort filtered tickets by the selected order', () => {
+    const store = TestBed.inject(NewDashboardStore);
+
+    store.sort.set('urgency');
+    expect(store.filtered().map((ticket) => ticket.urgencyScore)).toEqual([96, 90, 81, 74, 58, 45, 32, 25]);
+
+    store.sort.set('sla');
+    expect(store.filtered().map((ticket) => ticket.slaMinutes)).toEqual([60, 95, 150, 210, 260, 300, 400, 500]);
+  });
 });

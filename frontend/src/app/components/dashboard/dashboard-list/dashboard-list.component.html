@@ -5,12 +5,14 @@
   [filterPath]="store.filterPath()"
   [filterStatus]="store.filterStatus()"
   [filterType]="store.filterType()"
+  [sort]="store.sort()"
   [statuses]="store.statuses()"
   [issueTypes]="store.issueTypes()"
   (queryChange)="store.query.set($event)"
   (filterPathChange)="store.filterPath.set($event)"
   (filterStatusChange)="store.filterStatus.set($event)"
   (filterTypeChange)="store.filterType.set($event)"
+  (sortChange)="store.sort.set($event)"
 />
 
 <div class="cnt">{{ count() }} orders</div>

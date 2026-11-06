@@ -50,4 +50,18 @@
       }
     </mat-select>
   </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Sort by</mat-label>
+    <mat-select
+      [ngModel]="sort"
+      (ngModelChange)="sortChange.emit($event)"
+      aria-label="Sort orders by"
+    >
+      <mat-option value="default">Default order</mat-option>
+      <mat-option value="urgency">Urgency · highest first</mat-option>
+      <mat-option value="sla">SLA · shortest first</mat-option>
+      <mat-option value="value">Order value · highest first</mat-option>
+    </mat-select>
+  </mat-form-field>
 </div>

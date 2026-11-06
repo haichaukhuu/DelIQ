@@ -4,6 +4,7 @@ import { DELIVERY_DATA_SOURCE } from '../contracts/delivery-data-source.contract
 import {
   TicketItem,
   TicketPath,
+  TicketSort,
   TicketStatus,
   TimelineActor,
   TimelineEntry,
@@ -25,6 +26,7 @@ export class NewDashboardStore {
   readonly filterPath = signal<TicketPath | ''>('');
   readonly filterStatus = signal<TicketStatus | ''>('');
   readonly filterType = signal<string>('');
+  readonly sort = signal<TicketSort>('default');
   readonly picks = signal<Record<string, number>>({}); // ticketId -> rec index
   readonly rejectedOpen = signal<Record<string, boolean>>({});
 
@@ -50,13 +52,24 @@ export class NewDashboardStore {
     const fp = this.filterPath();
     const fs = this.filterStatus();
     const ft = this.filterType();
-    return this.tickets().filter(
+    const filtered = this.tickets().filter(
       (t) =>
         (!q || (t.id + t.name + t.type + t.carrier).toLowerCase().includes(q)) &&
         (!fp || t.path === fp) &&
         (!fs || t.status === fs) &&
         (!ft || t.type === ft)
     );
+
+    switch (this.sort()) {
+      case 'urgency':
+        return [...filtered].sort((a, b) => b.urgencyScore - a.urgencyScore);
+      case 'sla':
+        return [...filtered].sort((a, b) => a.slaMinutes - b.slaMinutes);
+      case 'value':
+        return [...filtered].sort((a, b) => b.val - a.val);
+      default:
+        return filtered;
+    }
   });
 
   toggleOpen(id: string): void {
