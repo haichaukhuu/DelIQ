@@ -1,0 +1,120 @@
+.login-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(145deg, var(--side) 0%, #0f2928 100%);
+  color: var(--ink);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+}
+
+.brand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--side);
+  letter-spacing: -0.5px;
+}
+
+.logo .hi {
+  color: var(--coral);
+}
+
+.tag {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--mint);
+  color: var(--side);
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sub {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--mut);
+}
+
+.error-banner {
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  background: #f9e0e0;
+  border: 1px solid #c93c3c;
+  color: #c93c3c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.field input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--ink);
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--side);
+  box-shadow: 0 0 0 3px rgba(23, 64, 62, 0.12);
+}
+
+.submit-btn {
+  margin-top: 6px;
+  height: 44px;
+  border-radius: 10px !important;
+  background: var(--side) !important;
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+

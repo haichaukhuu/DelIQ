@@ -34,6 +34,26 @@ export class TicketCardComponent {
   @Output() takeOwnership = new EventEmitter<void>();
   @Output() markResolved = new EventEmitter<void>();
 
+  /**
+   * Resolution options are only interactive for Path B (Amber) tickets awaiting approval.
+   */
+  isRecommendationDisabled(): boolean {
+    return this.ticket.path !== 'B' || this.ticket.status !== 'Awaiting approval';
+  }
+
+  selectRecommendation(index: number): void {
+    if (!this.isRecommendationDisabled()) {
+      this.recommendationChange.emit(index);
+    }
+  }
+
+  activeDraftMessage(): string {
+    return (
+      this.ticket.recs[this.selectedRecommendation]?.draft ||
+      this.ticket.draft
+    );
+  }
+
   formatSla(minutes: number): string {
     return minutes >= 60
       ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`

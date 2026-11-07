@@ -5,7 +5,7 @@ export function stringQuery(request, name, options = {}) {
             throw new Error(`${name} is required`);
         return undefined;
     }
-    if (typeof value !== 'string' || value.trim() === '') {
+    if (typeof value !== "string" || value.trim() === "") {
         throw new Error(`${name} must be a non-empty string`);
     }
     const result = value.trim();
@@ -15,15 +15,15 @@ export function stringQuery(request, name, options = {}) {
     return result;
 }
 export function bodyString(body, name, options = {}) {
-    if (!body || typeof body !== 'object')
-        throw new Error('Request body must be an object');
+    if (!body || typeof body !== "object")
+        throw new Error("Request body must be an object");
     const value = body[name];
     if (value === undefined) {
         if (options.required)
             throw new Error(`${name} is required`);
         return undefined;
     }
-    if (typeof value !== 'string' || value.trim() === '') {
+    if (typeof value !== "string" || value.trim() === "") {
         throw new Error(`${name} must be a non-empty string`);
     }
     const result = value.trim();

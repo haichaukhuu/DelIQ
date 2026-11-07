@@ -24,6 +24,8 @@ export class DashboardListComponent {
     if (ok) {
       this.store.rejectedOpen.update((open) => ({ ...open, [id]: false }));
       this.toast('Approved and executed');
+    } else {
+      this.toast(this.store.error() ?? 'Approval failed');
     }
   }
 
@@ -31,7 +33,9 @@ export class DashboardListComponent {
     const ok = await this.store.reject(id, reason);
     this.store.rejectedOpen.update((open) => ({ ...open, [id]: false }));
     if (ok) {
-      this.toast('Rejected and logged');
+      this.toast('Rejected — pushed to Path C for human takeover');
+    } else {
+      this.toast(this.store.error() ?? 'Rejection failed');
     }
   }
 
@@ -43,6 +47,8 @@ export class DashboardListComponent {
     const ok = await this.store.takeOwnership(id);
     if (ok) {
       this.toast('You now own ' + id);
+    } else {
+      this.toast(this.store.error() ?? 'Ownership update failed');
     }
   }
 
@@ -50,6 +56,8 @@ export class DashboardListComponent {
     const ok = await this.store.markResolved(id);
     if (ok) {
       this.toast('Marked as resolved');
+    } else {
+      this.toast(this.store.error() ?? 'Resolution failed');
     }
   }
 

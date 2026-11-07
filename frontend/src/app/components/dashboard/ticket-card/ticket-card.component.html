@@ -1,36 +1,61 @@
 <mat-card class="card" [ngClass]="ticket.path">
-  <button
-    class="top"
-    type="button"
-    (click)="openToggle.emit()"
-    [attr.aria-expanded]="isOpen"
-  >
+  <button class="top" type="button" (click)="openToggle.emit()" [attr.aria-expanded]="isOpen">
     <div>
       <div class="id">{{ ticket.id }} · {{ ticket.tier }}</div>
       <div class="nm">{{ ticket.name }}</div>
     </div>
     <div class="badges">
-      <span class="b" [ngClass]="{ pA: ticket.path === 'A', pB: ticket.path === 'B', pC: ticket.path === 'C' }">
-        {{ ticket.path === 'A' ? 'Path A · Autonomous' : ticket.path === 'B' ? 'Path B · Human approval' : 'Path C · Human-led' }}
+      <span
+        class="b"
+        [ngClass]="{ pA: ticket.path === 'A', pB: ticket.path === 'B', pC: ticket.path === 'C' }"
+      >
+        {{
+          ticket.path === 'A'
+            ? 'Path A · Autonomous'
+            : ticket.path === 'B'
+              ? 'Path B · Human approval'
+              : 'Path C · Human-led'
+        }}
       </span>
-      <span class="b" [ngClass]="{
-        'sev-Critical': ticket.sev === 'Critical',
-        'sev-High': ticket.sev === 'High',
-        'sev-Medium': ticket.sev === 'Medium',
-        'sev-Low': ticket.sev === 'Low'
-      }">{{ ticket.sev }}</span>
+      <span
+        class="b"
+        [ngClass]="{
+          'sev-Critical': ticket.sev === 'Critical',
+          'sev-High': ticket.sev === 'High',
+          'sev-Medium': ticket.sev === 'Medium',
+          'sev-Low': ticket.sev === 'Low',
+        }"
+        >{{ ticket.sev }}</span
+      >
     </div>
     <div class="main">
-      <span>Issue <b>{{ ticket.type }}</b></span>
-      <span>Carrier <b>{{ ticket.carrier }}</b></span>
-      <span>Order value <b>€{{ ticket.val | number }}</b></span>
-      <span>SLA left <b>{{ formatSla(ticket.slaMinutes) }}</b></span>
-      <span>Urgency <b>{{ ticket.urgencyScore }}/100</b></span>
-      <span>Status <b>{{ ticket.status }}</b></span>
+      <span
+        >Issue <b>{{ ticket.type }}</b></span
+      >
+      <span
+        >Carrier <b>{{ ticket.carrier }}</b></span
+      >
+      <span
+        >Order value <b>€{{ ticket.val | number }}</b></span
+      >
+      <span
+        >SLA left <b>{{ formatSla(ticket.slaMinutes) }}</b></span
+      >
+      <span
+        >Urgency <b>{{ ticket.urgencyScore }}/100</b></span
+      >
+      <span
+        >Status <b>{{ ticket.status }}</b></span
+      >
     </div>
     <div class="main">{{ ticket.info }}</div>
     <div class="hint">
-      <span>{{ isOpen ? 'Hide' : 'Click to view' }} solution recommendation &amp; history</span>
+      <span
+        >{{ isOpen ? 'Hide' : 'Click to view' }}
+        {{
+          ticket.path === 'C' ? 'case details & history' : 'solution recommendation & history'
+        }}</span
+      >
       <span>{{ isOpen ? '▴' : '▾' }}</span>
     </div>
   </button>
@@ -39,33 +64,74 @@
     <div class="det">
       <div>
         <div class="note" [ngClass]="ticket.path">
-          {{ ticket.path === 'A' ? 'AI handled this low-risk case on its own. Every step is in the audit log.' : ticket.path === 'B' ? 'AI prepared this recommendation. Pick a fix and approve with one click.' : 'High-risk case. AI only prepared a brief. A person must own and decide.' }}
+          {{
+            ticket.path === 'A'
+              ? 'AI handled this low-risk case on its own. Every step is in the audit log.'
+              : ticket.path === 'B'
+                ? 'AI prepared this recommendation. Pick a fix and approve with one click.'
+                : ticket.status === 'In progress'
+                  ? 'You own this case. Resolve the issue manually and mark resolved when complete.'
+                  : 'High-risk case. Please resolve manually.'
+          }}
         </div>
 
-        <h3>Recommended fixes, ranked</h3>
-        @for (recommendation of ticket.recs; track recommendation.title; let index = $index) {
-          <label class="rec" [ngClass]="{ sel: selectedRecommendation === index }">
-            <mat-radio-button
-              [name]="'recommendation-' + ticket.id"
-              [value]="index"
-              [checked]="selectedRecommendation === index"
-              (change)="recommendationChange.emit(index)"
-              [disabled]="ticket.path !== 'B' || ticket.status !== 'Awaiting approval'"
-            ></mat-radio-button>
-            <span>
-              <b>{{ recommendation.title }}</b>
-              <small>Speed {{ recommendation.speedText }} · Cost {{ recommendation.costText }} · Chance to meet deadline {{ recommendation.successProbability }}%</small>
-            </span>
-          </label>
-        }
+        @if (ticket.path !== 'C') {
+          <h3>Recommended fixes, ranked</h3>
+          <mat-radio-group
+            class="rec-group"
+            [name]="'recommendation-' + ticket.id"
+            [value]="selectedRecommendation"
+            [disabled]="isRecommendationDisabled()"
+            (change)="selectRecommendation($event.value)"
+          >
+            @for (recommendation of ticket.recs; track recommendation.title; let index = $index) {
+              <div
+                class="rec"
+                [class.sel]="selectedRecommendation === index"
+                [class.disabled]="isRecommendationDisabled()"
+                (click)="selectRecommendation(index)"
+              >
+                <mat-radio-button
+                  [value]="index"
+                  [disabled]="isRecommendationDisabled()"
+                ></mat-radio-button>
+                <span>
+                  <b>{{ recommendation.title }}</b>
+                  <small
+                    >Speed {{ recommendation.speedText }} · Cost {{ recommendation.costText }} ·
+                    Chance to meet deadline {{ recommendation.successProbability }}%</small
+                  >
+                </span>
+              </div>
+            }
+          </mat-radio-group>
 
-        <h3>Draft message to customer</h3>
-        <div class="draft">{{ ticket.draft }}</div>
+          <h3>Draft message to customer</h3>
+          <div class="draft">{{ activeDraftMessage() }}</div>
+        }
 
         @if (ticket.path === 'B') {
           <div class="act">
-            <button mat-flat-button color="primary" class="btn ok" type="button" (click)="approve.emit()" [disabled]="ticket.status === 'Resolved'">Approve</button>
-            <button mat-stroked-button color="warn" class="btn no" type="button" (click)="rejectToggle.emit()" [disabled]="ticket.status === 'Resolved'">Reject</button>
+            <button
+              mat-flat-button
+              color="primary"
+              class="btn ok"
+              type="button"
+              (click)="approve.emit()"
+              [disabled]="ticket.status === 'Resolved'"
+            >
+              Approve
+            </button>
+            <button
+              mat-stroked-button
+              color="warn"
+              class="btn no"
+              type="button"
+              (click)="rejectToggle.emit()"
+              [disabled]="ticket.status === 'Resolved'"
+            >
+              Reject
+            </button>
             <div class="reason" [class.on]="isRejectOpen">
               <mat-form-field appearance="outline">
                 <mat-label>Reason</mat-label>
@@ -75,7 +141,15 @@
                   <mat-option value="Carrier capacity limited">Carrier capacity limited</mat-option>
                 </mat-select>
               </mat-form-field>
-              <button mat-stroked-button class="btn" type="button" (click)="reject.emit(reason.value || 'Cost too high')" data-rej>Confirm</button>
+              <button
+                mat-stroked-button
+                class="btn"
+                type="button"
+                (click)="reject.emit(reason.value || 'Cost too high')"
+                data-rej
+              >
+                Confirm
+              </button>
             </div>
           </div>
         }
@@ -83,10 +157,26 @@
         @if (ticket.path === 'C') {
           <div class="act">
             @if (ticket.status === 'Human-led') {
-              <button mat-flat-button color="primary" class="btn pri" type="button" (click)="takeOwnership.emit()">Take ownership</button>
+              <button
+                mat-flat-button
+                color="primary"
+                class="btn pri"
+                type="button"
+                (click)="takeOwnership.emit()"
+              >
+                Take ownership
+              </button>
             }
             @if (ticket.status === 'In progress') {
-              <button mat-flat-button color="primary" class="btn ok" type="button" (click)="markResolved.emit()">Mark resolved</button>
+              <button
+                mat-flat-button
+                color="primary"
+                class="btn ok"
+                type="button"
+                (click)="markResolved.emit()"
+              >
+                Mark resolved
+              </button>
             }
             @if (ticket.status !== 'Human-led' && ticket.status !== 'In progress') {
               <span class="id">Status: {{ ticket.status }}</span>
@@ -100,7 +190,8 @@
         <ul class="tl">
           @for (entry of ticket.tl; track entry.time + entry.text) {
             <li [ngClass]="entry.cls">
-              <time>{{ entry.time }} · {{ entry.actor }}</time>{{ entry.text }}
+              <time>{{ entry.time }} · {{ entry.actor }}</time
+              >{{ entry.text }}
             </li>
           }
         </ul>

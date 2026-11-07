@@ -1,4 +1,4 @@
-import type { Request } from 'express';
+import type { Request } from "express";
 
 export function stringQuery(
   request: Request,
@@ -10,7 +10,7 @@ export function stringQuery(
     if (options.required) throw new Error(`${name} is required`);
     return undefined;
   }
-  if (typeof value !== 'string' || value.trim() === '') {
+  if (typeof value !== "string" || value.trim() === "") {
     throw new Error(`${name} must be a non-empty string`);
   }
   const result = value.trim();
@@ -25,13 +25,14 @@ export function bodyString(
   name: string,
   options: { required?: boolean; maxLength?: number } = {},
 ): string | undefined {
-  if (!body || typeof body !== 'object') throw new Error('Request body must be an object');
+  if (!body || typeof body !== "object")
+    throw new Error("Request body must be an object");
   const value = (body as Record<string, unknown>)[name];
   if (value === undefined) {
     if (options.required) throw new Error(`${name} is required`);
     return undefined;
   }
-  if (typeof value !== 'string' || value.trim() === '') {
+  if (typeof value !== "string" || value.trim() === "") {
     throw new Error(`${name} must be a non-empty string`);
   }
   const result = value.trim();
@@ -43,7 +44,11 @@ export function bodyString(
 
 export function bodyUuid(body: unknown, name: string): string {
   const value = bodyString(body, name, { required: true });
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value!)) {
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value!,
+    )
+  ) {
     throw new Error(`${name} must be a UUID`);
   }
   return value!;

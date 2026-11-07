@@ -1,0 +1,49 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="brand-header">
+      <div class="logo">Del<span class="hi">I</span>Q</div>
+      <span class="tag">Employee Portal</span>
+    </div>
+
+    <h1>Control Tower Sign In</h1>
+    <p class="sub">
+      Sign in with your dispatcher account to monitor and resolve delivery exceptions.
+    </p>
+
+    @if (errorMessage(); as error) {
+      <div class="error-banner" role="alert">
+        {{ error }}
+      </div>
+    }
+
+    <form class="login-form" (ngSubmit)="onSubmit()">
+      <label class="field">
+        <span>Employee Email</span>
+        <input
+          type="email"
+          name="username"
+          autocomplete="username"
+          placeholder="Enter email"
+          [ngModel]="username()"
+          (ngModelChange)="username.set($event)"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span>Password</span>
+        <input
+          type="password"
+          name="password"
+          autocomplete="current-password"
+          placeholder="Enter password"
+          [ngModel]="password()"
+          (ngModelChange)="password.set($event)"
+          required
+        />
+      </label>
+
+      <button mat-flat-button color="primary" class="submit-btn" type="submit">Sign in</button>
+    </form>
+  </div>
+</div>

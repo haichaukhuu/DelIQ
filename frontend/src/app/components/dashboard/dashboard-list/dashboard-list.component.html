@@ -3,9 +3,6 @@
   <span>Governance: Green autonomous <b>{{ store.autonomousPathA() ? 'enabled' : 'disabled' }}</b> · Amber cap <b>€{{ store.spendingCap() }}</b></span>
   <button type="button" (click)="store.toggleKillSwitch()">{{ store.killSwitch() ? 'Disable kill switch' : 'Enable kill switch' }}</button>
 </div>
-@if (store.loading()) {
-  <div class="empty">Loading cases from the control-tower API…</div>
-}
 @if (store.error()) {
   <div class="error" role="alert">{{ store.error() }}</div>
 }
@@ -25,26 +22,33 @@
   (sortChange)="store.sort.set($event)"
 />
 
-<div class="cnt">{{ count() }} orders</div>
+@if (store.loading()) {
+  <div class="empty loading-state" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <span>Loading cases from the control-tower API…</span>
+  </div>
+} @else {
+  <div class="cnt">{{ count() }} orders</div>
 
-<div id="list">
-  @for (ticket of store.filtered(); track ticket.id) {
-    <app-ticket-card
-      [ticket]="ticket"
-      [isOpen]="store.openId() === ticket.id"
-      [selectedRecommendation]="store.picks()[ticket.id] ?? 0"
-      [isRejectOpen]="store.rejectedOpen()[ticket.id] ?? false"
-      (openToggle)="store.toggleOpen(ticket.id)"
-      (recommendationChange)="store.setPick(ticket.id, $event)"
-      (approve)="approve(ticket.id)"
-      (reject)="reject(ticket.id, $event)"
-      (rejectToggle)="toggleReject(ticket.id)"
-      (takeOwnership)="own(ticket.id)"
-      (markResolved)="resolve(ticket.id)"
-    />
-  } @empty {
-    <div class="empty">No orders match. Clear a filter to see more.</div>
-  }
-</div>
+  <div id="list">
+    @for (ticket of store.filtered(); track ticket.id) {
+      <app-ticket-card
+        [ticket]="ticket"
+        [isOpen]="store.openId() === ticket.id"
+        [selectedRecommendation]="store.picks()[ticket.id] ?? 0"
+        [isRejectOpen]="store.rejectedOpen()[ticket.id] ?? false"
+        (openToggle)="store.toggleOpen(ticket.id)"
+        (recommendationChange)="store.setPick(ticket.id, $event)"
+        (approve)="approve(ticket.id)"
+        (reject)="reject(ticket.id, $event)"
+        (rejectToggle)="toggleReject(ticket.id)"
+        (takeOwnership)="own(ticket.id)"
+        (markResolved)="resolve(ticket.id)"
+      />
+    } @empty {
+      <div class="empty">No orders match. Clear a filter to see more.</div>
+    }
+  </div>
+}
 
 <div class="toast" [class.on]="toastText()">{{ toastText() }}</div>

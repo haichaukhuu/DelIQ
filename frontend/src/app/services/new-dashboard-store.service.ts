@@ -32,7 +32,7 @@ export class NewDashboardStore {
   // Governance settings
   readonly killSwitch = signal<boolean>(false);
   readonly autonomousPathA = signal<boolean>(true);
-  readonly spendingCap = signal<number>(100);
+  readonly spendingCap = signal<number>(5000);
 
   constructor() {
     void this.loadTickets();
@@ -99,6 +99,7 @@ export class NewDashboardStore {
       return false;
     }
 
+    this.error.set(null);
     const pick = this.picks()[ticketId] ?? 0;
     try {
       await this.dataSource.approve(targetTicket.backendId!, targetTicket.recommendationIds?.[pick], 'Desmond');
@@ -124,12 +125,14 @@ export class NewDashboardStore {
       return false;
     }
 
+    this.error.set(null);
     try {
       await this.dataSource.reject(targetTicket.backendId!, targetTicket.recommendationIds?.[this.picks()[ticketId] ?? 0], 'Desmond', trimmedReason);
       this.appendTimelineEntries(ticketId, [
         { time: this.currentTimeText(), actor: 'Dispatcher', text: `Rejected recommendation. Reason: ${trimmedReason}`, cls: 'no' },
+        { time: this.currentTimeText(), actor: 'AI', text: 'Case pushed to Path C (Human-led) for human takeover', cls: 'ai' },
       ]);
-      this.updateStatus(ticketId, 'Rejected');
+      this.escalateToPathC(ticketId);
       return true;
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Rejection failed');
@@ -142,6 +145,7 @@ export class NewDashboardStore {
     if (!targetTicket) {
       return false;
     }
+    this.error.set(null);
     try {
       await this.dataSource.takeOwnership(targetTicket.backendId!, 'Desmond');
       this.addTimeline(ticketId, 'Dispatcher', 'Took ownership of this case', 'hu');
@@ -158,6 +162,7 @@ export class NewDashboardStore {
     if (!targetTicket || targetTicket.status === 'Resolved') {
       return false;
     }
+    this.error.set(null);
     try {
       await this.dataSource.resolve(targetTicket.backendId!, 'Desmond');
       this.addTimeline(ticketId, 'Dispatcher', 'Marked case as resolved', 'hu');
@@ -169,9 +174,19 @@ export class NewDashboardStore {
     }
   }
 
-  private async loadTickets(): Promise<void> {
+  private async loadTickets(delayMs = 0): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
     try {
-      this.tickets.set(await this.dataSource.loadTickets());
+      if (delayMs > 0) {
+        const [tickets] = await Promise.all([
+          this.dataSource.loadTickets(),
+          new Promise<void>((resolve) => setTimeout(resolve, delayMs)),
+        ]);
+        this.tickets.set(tickets);
+      } else {
+        this.tickets.set(await this.dataSource.loadTickets());
+      }
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Unable to load cases');
     } finally {
@@ -179,9 +194,23 @@ export class NewDashboardStore {
     }
   }
 
+  async reloadWithDelay(delayMs = 5000): Promise<void> {
+    await this.loadTickets(delayMs);
+  }
+
   private updateStatus(ticketId: string, next: TicketStatus): void {
     this.tickets.update((list) =>
       list.map((t) => (t.id === ticketId ? { ...t, status: next } : t))
+    );
+  }
+
+  private escalateToPathC(ticketId: string): void {
+    this.tickets.update((list) =>
+      list.map((t) =>
+        t.id === ticketId
+          ? { ...t, path: 'C', status: 'Human-led', recs: [], recommendationIds: [], draft: '' }
+          : t
+      )
     );
   }
 

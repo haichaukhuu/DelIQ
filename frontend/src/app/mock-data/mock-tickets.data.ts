@@ -16,11 +16,8 @@ export const MOCK_TICKETS: TicketItem[] = [
     urgencyScore: 96,
     status: 'Human-led',
     info: 'Truck stopped on E4, 62 km from site. Crew of 6 waits on site.',
-    recs: [
-      { title: 'Dispatch replacement truck from Jönköping DC', speedText: 'ETA 2h 10m', costText: '€640', successProbability: 88 },
-      { title: 'Re-route nearest carrier vehicle', speedText: 'ETA 3h', costText: '€410', successProbability: 61 }
-    ],
-    draft: 'Hej, your delivery is delayed by a vehicle fault. Our team is arranging a replacement and will call you within 15 minutes.',
+    recs: [],
+    draft: '',
     tl: [
       { time: '07:42', actor: 'AI', text: 'Detection: GPS stalled 38 min, milestone “In transit” overdue', cls: 'ai' },
       { time: '07:44', actor: 'AI', text: 'Classified: B2B strategic account, SLA 95 min, urgency 96', cls: 'ai' },
@@ -130,8 +127,8 @@ export const MOCK_TICKETS: TicketItem[] = [
     urgencyScore: 90,
     status: 'Human-led',
     info: 'Customer refused unloading: two doors damaged on arrival.',
-    recs: [ { title: 'Arrange replacement order with priority picking', speedText: '2 days', costText: '€1,900', successProbability: 70 } ],
-    draft: 'Hej, we are sorry about the damage. A replacement is being prepared and our account manager will call you today.',
+    recs: [],
+    draft: '',
     tl: [
       { time: '10:02', actor: 'Driver', text: 'Reported damage on site (photo attached)', cls: 'hu' },
       { time: '10:03', actor: 'AI', text: 'High-value order, so Path C. Case brief prepared for account manager', cls: 'ai' }

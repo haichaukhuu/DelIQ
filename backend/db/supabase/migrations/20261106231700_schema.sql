@@ -1,6 +1,11 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE SCHEMA IF NOT EXISTS deliq;
 
+GRANT USAGE ON SCHEMA deliq TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA deliq GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA deliq GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA deliq GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
 CREATE TABLE IF NOT EXISTS deliq.cases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_number TEXT NOT NULL UNIQUE,
@@ -285,3 +290,9 @@ WHERE case_number = 'DLQ-0001'
       SELECT 1 FROM deliq.recommendations r
       WHERE r.case_id = deliq.cases.id AND r.rank = 1
   );
+
+GRANT USAGE ON SCHEMA deliq TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA deliq TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA deliq TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA deliq TO anon, authenticated, service_role;
+NOTIFY pgrst, 'reload schema';
