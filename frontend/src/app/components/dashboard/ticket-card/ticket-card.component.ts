@@ -35,6 +35,7 @@ export class TicketCardComponent {
   @Output() markResolved = new EventEmitter<void>();
 
   formatSla(minutes: number): string {
+    if (minutes < 0) return `breached ${Math.abs(minutes)}m ago`;
     return minutes >= 60
       ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
       : `${minutes}m`;

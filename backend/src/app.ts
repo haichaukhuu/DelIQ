@@ -9,6 +9,13 @@ import {
   platformDb,
 } from './supabase.js';
 import { bodyString, bodyUuid, stringQuery } from './validation.js';
+import { loadTickets } from './services/tickets.js';
+import { loadKpis } from './services/kpis.js';
+import { loadSettings, updateSettings } from './services/settings.js';
+import { runDetection } from './services/pipeline.js';
+import { injectScenario, resetDemo } from './services/demo.js';
+import { approveRecommendation, rejectRecommendation, resolveCase } from './services/execution.js';
+import { captureIssue } from './services/issues.js';
 
 type AsyncHandler = (request: Request, response: Response) => Promise<void>;
 const asyncRoute = (handler: AsyncHandler) => (request: Request, response: Response, next: NextFunction) =>
@@ -94,9 +101,30 @@ app.get('/api/source/orders/:orderNumber', asyncRoute(async (request, response) 
 }));
 
 app.get('/api/kpis', asyncRoute(async (_request, response) => {
-  const summary = assertQuery(await deliqDb.from('v_kpi_summary').select('*').single());
-  response.json(summary);
+  response.json(await loadKpis());
 }));
+
+app.get('/api/tickets', asyncRoute(async (_request, response) => { response.json(await loadTickets()); }));
+
+app.get('/api/messages', asyncRoute(async (_request, response) => {
+  response.json(assertQuery(await deliqDb.from('customer_messages').select('*').order('sent_at', { ascending: false })));
+}));
+
+app.post('/api/detection/run', asyncRoute(async (_request, response) => { response.json(await runDetection()); }));
+
+app.get('/api/settings', asyncRoute(async (_request, response) => { response.json(await loadSettings()); }));
+
+app.put('/api/settings', asyncRoute(async (request, response) => {
+  const actor = bodyString(request.body, 'updatedBy', { required: true, maxLength: 120 })!;
+  response.json(await updateSettings(request.body, actor));
+}));
+
+app.post('/api/demo/inject', asyncRoute(async (request, response) => {
+  const scenario = bodyString(request.body, 'scenario', { required: true, maxLength: 80 })!;
+  response.json(await injectScenario(scenario));
+}));
+
+app.post('/api/demo/reset', asyncRoute(async (_request, response) => { response.json(await resetDemo()); }));
 
 app.post('/api/cases/:id/ownership', asyncRoute(async (request, response) => {
   const ownerName = bodyString(request.body, 'ownerName', { required: true, maxLength: 120 })!;
@@ -113,58 +141,25 @@ app.post('/api/cases/:id/approvals', asyncRoute(async (request, response) => {
   const decision = bodyString(request.body, 'decision', { required: true });
   if (decision !== 'APPROVED' && decision !== 'REJECTED') throw new Error('decision must be APPROVED or REJECTED');
   const id = paramString(request, 'id');
-  const caseRow = assertQuery<Record<string, any>>(await deliqDb.from('cases').select('autonomy_path,status').eq('id', id).single());
-  if (caseRow.autonomy_path !== 'AMBER') throw new Error('Only Amber cases can use dispatcher approval');
-  if (caseRow.status !== 'PENDING_APPROVAL') throw new Error('Case is not awaiting approval');
-  const recommendation = assertQuery<Record<string, any>>(await deliqDb.from('recommendations')
-    .select('estimated_cost').eq('id', recommendationId).eq('case_id', id).single());
-  if (decision === 'APPROVED' && Number(recommendation.estimated_cost) > 100) {
-    throw new Error('Amber execution exceeds the €100 per-case spending cap');
-  }
-  const approval = assertQuery(await deliqDb.from('approvals').insert({
-    case_id: id, recommendation_id: recommendationId, decision, decided_by: actor, reason,
-  }).select().single());
-  const status = decision === 'APPROVED' ? 'RESOLVED' : 'OPEN';
-  await assertQuery(await deliqDb.from('recommendations').update({
-    status: decision === 'APPROVED' ? 'EXECUTED' : 'REJECTED',
-  }).eq('id', recommendationId).eq('case_id', id).select().single());
-  if (decision === 'APPROVED') {
-    await assertQuery(await deliqDb.from('actions').insert({
-      case_id: id,
-      recommendation_id: recommendationId,
-      action_type: 'APPROVED_RECOMMENDATION',
-      execution_status: 'COMPLETED',
-      executed_by: actor,
-      result_summary: 'Recommendation approved by dispatcher.',
-    }).select().single());
-  }
-  await assertQuery(await deliqDb.from('cases').update({ status, resolved_at: decision === 'APPROVED' ? new Date().toISOString() : null }).eq('id', id).select().single());
-  await writeAudit(id, actor, `APPROVAL_${decision}`, 'RECOMMENDATION', recommendationId, { reason });
-  response.status(201).json(approval);
+  if (!recommendationId) throw new Error('recommendationId is required');
+  const result = decision === 'APPROVED'
+    ? await approveRecommendation(id, recommendationId, actor)
+    : await rejectRecommendation(id, recommendationId, actor, reason ?? '');
+  response.status(201).json(result);
 }));
 
 app.post('/api/cases/:id/resolve', asyncRoute(async (request, response) => {
   const actor = bodyString(request.body, 'resolvedBy', { required: true, maxLength: 120 })!;
   const id = paramString(request, 'id');
-  const updated = assertQuery(await deliqDb.from('cases').update({
-    status: 'RESOLVED',
-    resolved_at: new Date().toISOString(),
-  }).eq('id', id).eq('autonomy_path', 'RED').select().single());
-  await writeAudit(id, actor, 'MANUAL_RESOLUTION', 'CASE', id, {});
-  response.json(updated);
+  response.json(await resolveCase(id, actor));
 }));
 
 app.post('/api/issue-reports', asyncRoute(async (request, response) => {
   const reportedBy = bodyString(request.body, 'reportedBy', { required: true, maxLength: 120 })!;
   const description = bodyString(request.body, 'description', { required: true, maxLength: 4000 })!;
   const issueType = bodyString(request.body, 'issueType', { required: true, maxLength: 80 })!;
-  const caseId = bodyString(request.body, 'caseId');
-  const report = assertQuery<Record<string, any>>(await deliqDb.from('issue_reports').insert({
-    case_id: caseId ?? null, reported_by: reportedBy, issue_type: issueType, description,
-    source_system: 'MANUAL',
-  }).select().single());
-  if (caseId) await writeAudit(caseId, reportedBy, 'CREATE_ISSUE_REPORT', 'ISSUE_REPORT', report.id, { issue_type: issueType });
-  response.status(201).json(report);
+  const orderNumber = bodyString(request.body, 'orderNumber');
+  response.status(201).json(await captureIssue({ reportedBy, description, issueType, orderNumber }));
 }));
 
 async function writeAudit(

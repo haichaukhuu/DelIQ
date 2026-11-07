@@ -18,6 +18,11 @@ export class NewDashboardStore {
   readonly tickets = signal<TicketItem[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly kpis = signal<Record<string, unknown>>({});
+  readonly demoEnabled = signal(true);
+  readonly llmEnabled = signal(false);
+  readonly scenarios = signal<string[]>([]);
+  readonly busy = signal(false);
 
   // UI state
   readonly openId = signal<string | null>(null);
@@ -35,7 +40,7 @@ export class NewDashboardStore {
   readonly spendingCap = signal<number>(100);
 
   constructor() {
-    void this.loadTickets();
+    void this.refresh();
   }
 
   // Derived lists
@@ -80,7 +85,10 @@ export class NewDashboardStore {
   }
 
   toggleKillSwitch(): void {
-    this.killSwitch.update((enabled) => !enabled);
+    const next = !this.killSwitch();
+    this.killSwitch.set(next);
+    this.busy.set(true);
+    void this.dataSource.updateSettings({ killSwitch: next }).then(() => this.refresh()).catch((error) => this.error.set(error instanceof Error ? error.message : 'Settings update failed')).finally(() => this.busy.set(false));
   }
 
   setPick(ticketId: string, recIndex: number): void {
@@ -101,12 +109,8 @@ export class NewDashboardStore {
 
     const pick = this.picks()[ticketId] ?? 0;
     try {
-      await this.dataSource.approve(targetTicket.backendId!, targetTicket.recommendationIds?.[pick], 'Desmond');
-      this.appendTimelineEntries(ticketId, [
-        { time: this.currentTimeText(), actor: 'Dispatcher', text: `Approved: ${targetTicket.recs[pick]?.title ?? 'Selected recommendation'}`, cls: 'hu' },
-        { time: this.currentTimeText(), actor: 'System', text: 'Action executed and audit entry recorded', cls: 'ai' },
-      ]);
-      this.updateStatus(ticketId, 'Resolved');
+      await this.dataSource.approve(targetTicket.backendId ?? targetTicket.id, targetTicket.recommendationIds?.[pick], 'Desmond');
+      await this.refresh();
       return true;
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Approval failed');
@@ -125,11 +129,8 @@ export class NewDashboardStore {
     }
 
     try {
-      await this.dataSource.reject(targetTicket.backendId!, targetTicket.recommendationIds?.[this.picks()[ticketId] ?? 0], 'Desmond', trimmedReason);
-      this.appendTimelineEntries(ticketId, [
-        { time: this.currentTimeText(), actor: 'Dispatcher', text: `Rejected recommendation. Reason: ${trimmedReason}`, cls: 'no' },
-      ]);
-      this.updateStatus(ticketId, 'Rejected');
+      await this.dataSource.reject(targetTicket.backendId ?? targetTicket.id, targetTicket.recommendationIds?.[this.picks()[ticketId] ?? 0], 'Desmond', trimmedReason);
+      await this.refresh();
       return true;
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Rejection failed');
@@ -143,9 +144,8 @@ export class NewDashboardStore {
       return false;
     }
     try {
-      await this.dataSource.takeOwnership(targetTicket.backendId!, 'Desmond');
-      this.addTimeline(ticketId, 'Dispatcher', 'Took ownership of this case', 'hu');
-      this.updateStatus(ticketId, 'In progress');
+      await this.dataSource.takeOwnership(targetTicket.backendId ?? targetTicket.id, 'Desmond');
+      await this.refresh();
       return true;
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Ownership update failed');
@@ -159,9 +159,8 @@ export class NewDashboardStore {
       return false;
     }
     try {
-      await this.dataSource.resolve(targetTicket.backendId!, 'Desmond');
-      this.addTimeline(ticketId, 'Dispatcher', 'Marked case as resolved', 'hu');
-      this.updateStatus(ticketId, 'Resolved');
+      await this.dataSource.resolve(targetTicket.backendId ?? targetTicket.id, 'Desmond');
+      await this.refresh();
       return true;
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Resolution failed');
@@ -169,15 +168,33 @@ export class NewDashboardStore {
     }
   }
 
-  private async loadTickets(): Promise<void> {
+  async refresh(): Promise<void> {
     try {
-      this.tickets.set(await this.dataSource.loadTickets());
+      const [tickets, kpis, settings] = await Promise.all([this.dataSource.loadTickets(), this.dataSource.loadKpis(), this.dataSource.loadSettings()]);
+      this.tickets.set(tickets);
+      this.kpis.set(kpis);
+      this.killSwitch.set(settings.killSwitch);
+      this.autonomousPathA.set(settings.autonomousPathA);
+      this.llmEnabled.set(settings.llmEnabled);
+      this.demoEnabled.set(settings.demoEnabled);
+      this.scenarios.set(settings.scenarios);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Unable to load cases');
     } finally {
       this.loading.set(false);
     }
   }
+
+  async updateAutonomousPathA(enabled: boolean): Promise<void> {
+    this.busy.set(true);
+    try { await this.dataSource.updateSettings({ autonomousPathA: enabled }); await this.refresh(); }
+    catch (error) { this.error.set(error instanceof Error ? error.message : 'Settings update failed'); }
+    finally { this.busy.set(false); }
+  }
+
+  async runDetection(): Promise<string> { const summary = await this.dataSource.runDetection(); await this.refresh(); return summary; }
+  async injectScenario(scenario: string): Promise<string> { const summary = await this.dataSource.injectScenario(scenario); await this.refresh(); return summary; }
+  async resetDemo(): Promise<string> { const summary = await this.dataSource.resetDemo(); await this.refresh(); return summary; }
 
   private updateStatus(ticketId: string, next: TicketStatus): void {
     this.tickets.update((list) =>

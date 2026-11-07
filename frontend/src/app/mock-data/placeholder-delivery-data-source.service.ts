@@ -13,6 +13,15 @@ export class PlaceholderDeliveryDataSourceService implements DeliveryDataSourceC
     return Promise.resolve(structuredClone(MOCK_TICKETS));
   }
 
+  loadKpis(): Promise<Record<string, unknown>> { return Promise.resolve({}); }
+  loadSettings(): Promise<{ killSwitch: boolean; autonomousPathA: boolean; llmEnabled: boolean; demoEnabled: boolean; scenarios: string[] }> {
+    return Promise.resolve({ killSwitch: false, autonomousPathA: true, llmEnabled: false, demoEnabled: true, scenarios: [] });
+  }
+  updateSettings(): Promise<void> { return Promise.resolve(); }
+  runDetection(): Promise<string> { return Promise.resolve('Detection completed'); }
+  injectScenario(scenario: string): Promise<string> { return Promise.resolve(`${scenario} injected`); }
+  resetDemo(): Promise<string> { return Promise.resolve('Demo reset'); }
+
   approve(): Promise<void> {
     return Promise.resolve();
   }
