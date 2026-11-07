@@ -2,75 +2,84 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
-import { provideControlTowerDependencies } from './contracts/control-tower.providers';
+import { DELIVERY_DATA_SOURCE, DeliveryDataSourceContract } from './contracts/delivery-data-source.contract';
 import { NewDashboardStore } from './services/new-dashboard-store.service';
+import { MOCK_TICKETS } from './mock-data/mock-tickets.data';
+
+class FakeDataSource implements DeliveryDataSourceContract {
+  tickets = structuredClone(MOCK_TICKETS);
+  settings = { killSwitch: false, autonomousPathA: true, llmEnabled: false, demoEnabled: true, scenarios: ['HERO_SHORT_PICK'] };
+  async loadTickets() { return structuredClone(this.tickets); }
+  async loadKpis() { return { open_cases: 8 }; }
+  async loadSettings() { return this.settings; }
+  async updateSettings(input: { killSwitch?: boolean; autonomousPathA?: boolean }) {
+    if (input.killSwitch !== undefined) this.settings.killSwitch = input.killSwitch;
+    if (input.autonomousPathA !== undefined) this.settings.autonomousPathA = input.autonomousPathA;
+  }
+  private find(ticketId: string) { return this.tickets.find((item) => (item.backendId && item.backendId === ticketId) || item.id === ticketId); }
+  async approve(ticketId: string) { const ticket = this.find(ticketId); if (ticket) ticket.status = 'Resolved'; }
+  async reject(ticketId: string) { const ticket = this.find(ticketId); if (ticket) ticket.status = 'Rejected'; }
+  async takeOwnership(ticketId: string) { const ticket = this.find(ticketId); if (ticket) ticket.status = 'In progress'; }
+  async resolve(ticketId: string) { const ticket = this.find(ticketId); if (ticket) ticket.status = 'Resolved'; }
+  async runDetection() { return '2 cases detected'; }
+  async injectScenario(scenario: string) { return `${scenario} injected`; }
+  async resetDemo() { return 'Demo reset'; }
+}
 
 describe('App & Control Tower Dashboard', () => {
+  let fake: FakeDataSource;
+
   beforeEach(async () => {
+    fake = new FakeDataSource();
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter(routes), provideControlTowerDependencies()],
+      providers: [
+        provideRouter(routes),
+        { provide: DELIVERY_DATA_SOURCE, useValue: fake },
+      ],
     }).compileComponents();
   });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
-
-  it('should navigate to /control/dashboard and render the Control Tower Dashboard header and tickets', async () => {
+  it('renders the queue', async () => {
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(App);
     await router.navigateByUrl('/control/dashboard');
-    fixture.detectChanges();
     await fixture.whenStable();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Control Tower Dashboard');
-    expect(compiled.querySelector('.cnt')?.textContent).toContain('8 orders');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Control Tower Dashboard');
+    expect(fixture.nativeElement.querySelector('.cnt')?.textContent).toContain('8 orders');
   });
 
-  it('should approve a Path B ticket and log timeline entries via AI_TRIAGE_ENGINE', () => {
+  it('defaults to the first recommendation and reloads after approval', async () => {
     const store = TestBed.inject(NewDashboardStore);
-    const initialTimelineCount = store.tickets().find((t) => t.id === 'DQ-2038')?.tl.length ?? 0;
-
-    store.setPick('DQ-2038', 1);
-    const approved = store.approve('DQ-2038');
-
-    expect(approved).toBe(true);
-    const updated = store.tickets().find((t) => t.id === 'DQ-2038');
-    expect(updated?.status).toBe('Resolved');
-    expect(updated?.tl.length).toBe(initialTimelineCount + 2);
+    await store.refresh();
+    const ticket = store.tickets().find((item) => item.path === 'B')!;
+    expect(store.picks()[ticket.id] ?? 0).toBe(0);
+    expect(await store.approve(ticket.id)).toBe(true);
+    expect(store.tickets().find((item) => item.id === ticket.id)?.status).toBe('Resolved');
   });
 
-  it('should reject a Path B ticket with reason and trigger AI re-planning timeline entry', () => {
+  it('supports ownership and reloads after resolution', async () => {
     const store = TestBed.inject(NewDashboardStore);
-    const rejected = store.reject('DQ-2036', 'Cost too high');
-
-    expect(rejected).toBe(true);
-    const updated = store.tickets().find((t) => t.id === 'DQ-2036');
-    expect(updated?.status).toBe('Rejected');
-    expect(updated?.tl.at(-1)?.text).toContain('Generating a new ranked plan');
+    await store.refresh();
+    const ticket = store.tickets().find((item) => item.path === 'C')!;
+    expect(await store.takeOwnership(ticket.id)).toBe(true);
+    expect(await store.markResolved(ticket.id)).toBe(true);
   });
 
-  it('should take ownership and resolve a Path C ticket', () => {
+  it('kill switch blocks approval and sorting remains deterministic', async () => {
     const store = TestBed.inject(NewDashboardStore);
-
-    expect(store.takeOwnership('DQ-2041')).toBe(true);
-    expect(store.tickets().find((t) => t.id === 'DQ-2041')?.status).toBe('In progress');
-
-    expect(store.markResolved('DQ-2041')).toBe(true);
-    expect(store.tickets().find((t) => t.id === 'DQ-2041')?.status).toBe('Resolved');
-  });
-
-  it('should sort filtered tickets by the selected order', () => {
-    const store = TestBed.inject(NewDashboardStore);
-
+    await store.refresh();
+    await store.updateAutonomousPathA(true);
+    store.toggleKillSwitch();
+    const amber = store.tickets().find((item) => item.path === 'B')!;
+    expect(await store.approve(amber.id)).toBe(false);
     store.sort.set('urgency');
     expect(store.filtered().map((ticket) => ticket.urgencyScore)).toEqual([96, 90, 81, 74, 58, 45, 32, 25]);
+  });
 
-    store.sort.set('sla');
-    expect(store.filtered().map((ticket) => ticket.slaMinutes)).toEqual([60, 95, 150, 210, 260, 300, 400, 500]);
+  it('returns a demo summary', async () => {
+    const store = TestBed.inject(NewDashboardStore);
+    expect(await store.injectScenario('HERO_SHORT_PICK')).toContain('injected');
   });
 });

@@ -39,7 +39,7 @@
     <div class="det">
       <div>
         <div class="note" [ngClass]="ticket.path">
-          {{ ticket.path === 'A' ? 'AI handled this low-risk case on its own. Every step is in the audit log.' : ticket.path === 'B' ? 'AI prepared this recommendation. Pick a fix and approve with one click.' : 'High-risk case. AI only prepared a brief. A person must own and decide.' }}
+          <b>Why this path:</b> {{ ticket.info }}. {{ ticket.path === 'A' ? 'AI handled this low-risk case on its own.' : ticket.path === 'B' ? 'AI prepared this recommendation for approval.' : 'A person must own and decide.' }}
         </div>
 
         <h3>Recommended fixes, ranked</h3>
@@ -60,7 +60,7 @@
         }
 
         <h3>Draft message to customer</h3>
-        <div class="draft">{{ ticket.draft }}</div>
+        <div class="draft">{{ ticket.recs[selectedRecommendation]?.draft || ticket.draft }}</div>
 
         @if (ticket.path === 'B') {
           <div class="act">

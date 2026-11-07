@@ -52,9 +52,22 @@ export class BackendDeliveryDataSourceService implements DeliveryDataSourceContr
   private readonly baseUrl = '/api';
 
   async loadTickets(): Promise<TicketItem[]> {
-    const cases = await this.request<BackendCase[]>('/cases?limit=200');
-    return Promise.all(cases.map((item) => this.mapCase(item)));
+    const cases = await this.request<any[]>('/tickets');
+    return cases.map((item) => this.mapTicket(item));
   }
+
+  async loadKpis(): Promise<Record<string, unknown>> { return this.request('/kpis'); }
+  async loadSettings(): Promise<{ killSwitch: boolean; autonomousPathA: boolean; llmEnabled: boolean; demoEnabled: boolean; scenarios: string[] }> {
+    const settings = await this.request<any>('/settings');
+    return { killSwitch: Boolean(settings.killSwitch?.enabled), autonomousPathA: settings.autonomyEnabled?.green !== false, llmEnabled: Boolean(settings.llmEnabled), demoEnabled: Boolean(settings.demoEnabled), scenarios: settings.scenarios ?? [] };
+  }
+  async updateSettings(input: { killSwitch?: boolean; autonomousPathA?: boolean }): Promise<void> {
+    const current = await this.request<any>('/settings');
+    await this.request('/settings', { method: 'PUT', body: JSON.stringify({ updatedBy: 'Desmond', killSwitch: input.killSwitch === undefined ? current.killSwitch : { enabled: input.killSwitch }, autonomyEnabled: input.autonomousPathA === undefined ? current.autonomyEnabled : { ...current.autonomyEnabled, green: input.autonomousPathA } }) });
+  }
+  async runDetection(): Promise<string> { const result = await this.request<any>('/detection/run', { method: 'POST' }); return `${result.created ?? 0} cases detected`; }
+  async injectScenario(scenario: string): Promise<string> { const result = await this.request<any>('/demo/inject', { method: 'POST', body: JSON.stringify({ scenario }) }); return result.summary; }
+  async resetDemo(): Promise<string> { const result = await this.request<any>('/demo/reset', { method: 'POST' }); return result.summary; }
 
   async approve(ticketId: string, recommendationId: string | undefined, decidedBy: string): Promise<void> {
     await this.request(`/cases/${encodeURIComponent(ticketId)}/approvals`, {
@@ -110,6 +123,18 @@ export class BackendDeliveryDataSourceService implements DeliveryDataSourceContr
         ...detail.audit.map((entry) => this.timeline(entry.created_at, this.actor(entry.actor), entry.action, 'hu')),
       ],
       recommendationIds: detail.recommendations.map((recommendation) => recommendation.id),
+    };
+  }
+
+  private mapTicket(item: any): TicketItem {
+    const path = this.mapPath(item.path);
+    const recs = (item.recommendations ?? []).map((r: any) => ({ title: r.title, speedText: r.etaText, costText: `€${Number(r.cost).toLocaleString()}`, successProbability: Number(r.probability), draft: r.message }));
+    return {
+      id: item.id, backendId: item.caseId, name: item.name, tier: item.customerType, customerTier: item.customerTier,
+      path, sev: this.mapSeverity(item.severity), type: item.exceptionType, carrier: 'Not assigned', val: Number(item.orderValueSek ?? 0) / 11,
+      slaMinutes: this.slaMinutes(item.dueAt), urgencyScore: Number(item.urgency ?? 0), status: this.mapStatus(item.status, path),
+      info: item.classification?.reasons?.join(', ') || item.name, recs, draft: recs[0]?.draft ?? '', tl: item.timeline ?? [],
+      recommendationIds: (item.recommendations ?? []).map((r: any) => r.id),
     };
   }
 

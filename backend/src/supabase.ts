@@ -8,10 +8,22 @@ function client(url: string, key: string, schema: string): SupabaseClient<any, a
   });
 }
 
-export const deliqDb = client(config.deliqUrl, config.deliqKey, 'deliq');
-export const platformDb = client(config.platformUrl, config.platformKey, 'operations');
-export const platformCommercialDb = client(config.platformUrl, config.platformKey, 'commercial');
-export const platformCoreDb = client(config.platformUrl, config.platformKey, 'core');
+export let deliqDb = client(config.deliqUrl, config.deliqKey, 'deliq');
+export let platformDb = client(config.platformUrl, config.platformKey, 'operations');
+export let platformCommercialDb = client(config.platformUrl, config.platformKey, 'commercial');
+export let platformCoreDb = client(config.platformUrl, config.platformKey, 'core');
+
+export function overrideClients(clients: Partial<{
+  deliqDb: SupabaseClient;
+  platformDb: SupabaseClient;
+  platformCommercialDb: SupabaseClient;
+  platformCoreDb: SupabaseClient;
+}>): void {
+  if (clients.deliqDb) deliqDb = clients.deliqDb;
+  if (clients.platformDb) platformDb = clients.platformDb;
+  if (clients.platformCommercialDb) platformCommercialDb = clients.platformCommercialDb;
+  if (clients.platformCoreDb) platformCoreDb = clients.platformCoreDb;
+}
 
 /*
  * These clients deliberately use service-role credentials and are never
