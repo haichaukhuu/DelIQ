@@ -14,36 +14,20 @@ import { DemoToolsComponent } from '../dashboard/demo-tools.component';
       <a class="back" routerLink="/control/dashboard">← Back to dashboard</a>
       <h2>Settings</h2>
       <p class="intro">Control Tower governance and demo tools.</p>
-
       <section class="panel">
         <h3>Governance</h3>
         <label class="setting">
-          <span>
-            <b>Kill switch</b>
-            <small>Pause all autonomous actions and require human handling.</small>
-          </span>
+          <span><b>Kill switch</b><small>Pause all autonomous actions and require human handling.</small></span>
           <input type="checkbox" [checked]="store.killSwitch()" (change)="store.toggleKillSwitch()" />
         </label>
         <label class="setting">
-          <span>
-            <b>Green autonomy</b>
-            <small>Allow low-risk Green cases to execute automatically.</small>
-          </span>
+          <span><b>Green autonomy</b><small>Allow low-risk Green cases to execute automatically.</small></span>
           <input type="checkbox" [checked]="store.autonomousPathA()" (change)="store.updateAutonomousPathA(!store.autonomousPathA())" />
         </label>
         <div class="value">Amber per-case cap <b>€{{ store.spendingCap() }}</b></div>
       </section>
-
-      <section class="panel">
-        <h3>Demo controls</h3>
-        <app-demo-tools />
-      </section>
-
-      <section class="panel">
-        <h3>KPIs</h3>
-        <app-kpi-bar />
-      </section>
-
+      <section class="panel"><h3>Demo controls</h3><app-demo-tools /></section>
+      <section class="panel"><h3>KPIs</h3><app-kpi-bar /></section>
       <p class="error" *ngIf="store.error()" role="alert">{{ store.error() }}</p>
     </div>
   `,

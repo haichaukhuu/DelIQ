@@ -1,10 +1,3 @@
-<div class="ks" [class.on]="store.killSwitch()">Kill switch is on: all AI actions are paused and every case needs a human.</div>
-<app-kpi-bar />
-<app-demo-tools />
-<div class="governance">
-  <span>Governance: Green autonomous <b>{{ store.autonomousPathA() ? 'enabled' : 'disabled' }}</b> · Amber cap <b>€{{ store.spendingCap() }}</b></span>
-  <button type="button" (click)="store.toggleKillSwitch()">{{ store.killSwitch() ? 'Disable kill switch' : 'Enable kill switch' }}</button>
-</div>
 @if (store.loading()) {
   <div class="empty">Loading cases from the control-tower API…</div>
 }

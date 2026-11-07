@@ -2,12 +2,10 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { NewDashboardStore } from '../../../services/new-dashboard-store.service';
 import { DashboardFiltersComponent } from '../dashboard-filters/dashboard-filters.component';
 import { TicketCardComponent } from '../ticket-card/ticket-card.component';
-import { KpiBarComponent } from '../kpi-bar.component';
-import { DemoToolsComponent } from '../demo-tools.component';
 
 @Component({
   selector: 'app-dashboard-list',
-  imports: [DashboardFiltersComponent, TicketCardComponent, KpiBarComponent, DemoToolsComponent],
+  imports: [DashboardFiltersComponent, TicketCardComponent],
   templateUrl: './dashboard-list.component.html',
   styleUrl: './dashboard-list.component.scss',
 })
