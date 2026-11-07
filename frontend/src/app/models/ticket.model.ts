@@ -17,6 +17,7 @@ export interface Recommendation {
   speedText: string; // e.g. "ETA 2h 10m" / "Today 14:00"
   costText: string;  // e.g. "€120"
   successProbability: number; // 0..100
+  draft?: string;
 }
 
 export interface TimelineEntry {
@@ -42,4 +43,7 @@ export interface TicketItem {
   recs: Recommendation[];
   draft: string; // drafted customer message
   tl: TimelineEntry[]; // timeline
+  backendId?: string;
+  customerTier?: string;
+  recommendationIds?: (string | undefined)[];
 }

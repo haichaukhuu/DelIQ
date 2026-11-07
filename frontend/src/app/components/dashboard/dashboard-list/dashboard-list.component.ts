@@ -15,20 +15,20 @@ export class DashboardListComponent {
 
   readonly count = computed(() => this.store.filtered().length);
 
-  approve(id: string): void {
+  async approve(id: string): Promise<void> {
     if (this.store.killSwitch()) {
       this.toast('Kill switch is on. Turn it off to continue');
       return;
     }
-    const ok = this.store.approve(id);
+    const ok = await this.store.approve(id);
     if (ok) {
       this.store.rejectedOpen.update((open) => ({ ...open, [id]: false }));
       this.toast('Approved and executed');
     }
   }
 
-  reject(id: string, reason: string): void {
-    const ok = this.store.reject(id, reason);
+  async reject(id: string, reason: string): Promise<void> {
+    const ok = await this.store.reject(id, reason);
     this.store.rejectedOpen.update((open) => ({ ...open, [id]: false }));
     if (ok) {
       this.toast('Rejected and logged');
@@ -39,15 +39,15 @@ export class DashboardListComponent {
     this.store.rejectedOpen.update((open) => ({ ...open, [id]: !open[id] }));
   }
 
-  own(id: string): void {
-    const ok = this.store.takeOwnership(id);
+  async own(id: string): Promise<void> {
+    const ok = await this.store.takeOwnership(id);
     if (ok) {
       this.toast('You now own ' + id);
     }
   }
 
-  resolve(id: string): void {
-    const ok = this.store.markResolved(id);
+  async resolve(id: string): Promise<void> {
+    const ok = await this.store.markResolved(id);
     if (ok) {
       this.toast('Marked as resolved');
     }

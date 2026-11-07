@@ -1,12 +1,13 @@
 import { InjectionToken } from '@angular/core';
 import { TicketItem } from '../models';
 
-/**
- * Abstraction for the Delivery Ticket Data Source.
- * Currently bound to PlaceholderDeliveryDataSourceService in /mock-data; will be swapped for the real HTTP backend later.
- */
+/** Server-backed queue and workflow operations used by the dashboard store. */
 export interface DeliveryDataSourceContract {
-  getInitialTickets(): TicketItem[];
+  loadTickets(): Promise<TicketItem[]>;
+  approve(ticketId: string, recommendationId: string | undefined, decidedBy: string): Promise<void>;
+  reject(ticketId: string, recommendationId: string | undefined, decidedBy: string, reason: string): Promise<void>;
+  takeOwnership(ticketId: string, ownerName: string): Promise<void>;
+  resolve(ticketId: string, ownerName: string): Promise<void>;
 }
 
 export const DELIVERY_DATA_SOURCE = new InjectionToken<DeliveryDataSourceContract>('DELIVERY_DATA_SOURCE');

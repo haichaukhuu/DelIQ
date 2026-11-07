@@ -1,10 +1,7 @@
 import { InjectionToken } from '@angular/core';
 import { TicketItem, TimelineEntry } from '../models';
 
-/**
- * Abstraction for the Core AI Triage & Resolution Engine.
- * Currently bound to PlaceholderAiTriageEngineService; will be swapped for the real AI Engine later.
- */
+/** Legacy presentation contract retained for non-workflow AI integrations. */
 export interface AiTriageEngineContract {
   buildApprovalTimelineEntries(
     ticket: TicketItem,

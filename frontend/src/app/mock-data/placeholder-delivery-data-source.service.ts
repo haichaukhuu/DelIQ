@@ -9,8 +9,23 @@ import { MOCK_TICKETS } from './mock-tickets.data';
  */
 @Injectable()
 export class PlaceholderDeliveryDataSourceService implements DeliveryDataSourceContract {
-  getInitialTickets(): TicketItem[] {
-    // TODO (Backend): Replace with GET /api/tickets from the backend Control Tower API.
-    return structuredClone(MOCK_TICKETS);
+  loadTickets(): Promise<TicketItem[]> {
+    return Promise.resolve(structuredClone(MOCK_TICKETS));
+  }
+
+  approve(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  reject(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  takeOwnership(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  resolve(): Promise<void> {
+    return Promise.resolve();
   }
 }

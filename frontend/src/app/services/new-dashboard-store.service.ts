@@ -1,5 +1,4 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { AI_TRIAGE_ENGINE } from '../contracts/ai-triage-engine.contract';
 import { DELIVERY_DATA_SOURCE } from '../contracts/delivery-data-source.contract';
 import {
   TicketItem,
@@ -15,10 +14,10 @@ import {
 @Injectable({ providedIn: 'root' })
 export class NewDashboardStore {
   private readonly dataSource = inject(DELIVERY_DATA_SOURCE);
-  private readonly aiTriageEngine = inject(AI_TRIAGE_ENGINE);
 
-  // Source data initialized via injected data source contract
-  readonly tickets = signal<TicketItem[]>(this.dataSource.getInitialTickets());
+  readonly tickets = signal<TicketItem[]>([]);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
 
   // UI state
   readonly openId = signal<string | null>(null);
@@ -33,7 +32,11 @@ export class NewDashboardStore {
   // Governance settings
   readonly killSwitch = signal<boolean>(false);
   readonly autonomousPathA = signal<boolean>(true);
-  readonly spendingCap = signal<number>(500);
+  readonly spendingCap = signal<number>(100);
+
+  constructor() {
+    void this.loadTickets();
+  }
 
   // Derived lists
   readonly issueTypes = computed(() => {
@@ -76,6 +79,10 @@ export class NewDashboardStore {
     this.openId.update((v) => (v === id ? null : id));
   }
 
+  toggleKillSwitch(): void {
+    this.killSwitch.update((enabled) => !enabled);
+  }
+
   setPick(ticketId: string, recIndex: number): void {
     if (recIndex < 0) {
       throw new Error('Recommendation index must be non-negative.');
@@ -83,7 +90,7 @@ export class NewDashboardStore {
     this.picks.update((m) => ({ ...m, [ticketId]: recIndex }));
   }
 
-  approve(ticketId: string): boolean {
+  async approve(ticketId: string): Promise<boolean> {
     if (this.killSwitch()) {
       return false;
     }
@@ -93,17 +100,21 @@ export class NewDashboardStore {
     }
 
     const pick = this.picks()[ticketId] ?? 0;
-    const entries = this.aiTriageEngine.buildApprovalTimelineEntries(
-      targetTicket,
-      pick,
-      this.currentTimeText()
-    );
-    this.appendTimelineEntries(ticketId, entries);
-    this.updateStatus(ticketId, 'Resolved');
-    return true;
+    try {
+      await this.dataSource.approve(targetTicket.backendId!, targetTicket.recommendationIds?.[pick], 'Desmond');
+      this.appendTimelineEntries(ticketId, [
+        { time: this.currentTimeText(), actor: 'Dispatcher', text: `Approved: ${targetTicket.recs[pick]?.title ?? 'Selected recommendation'}`, cls: 'hu' },
+        { time: this.currentTimeText(), actor: 'System', text: 'Action executed and audit entry recorded', cls: 'ai' },
+      ]);
+      this.updateStatus(ticketId, 'Resolved');
+      return true;
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'Approval failed');
+      return false;
+    }
   }
 
-  reject(ticketId: string, reason: string): boolean {
+  async reject(ticketId: string, reason: string): Promise<boolean> {
     const trimmedReason = reason.trim();
     if (!trimmedReason) {
       return false;
@@ -113,34 +124,59 @@ export class NewDashboardStore {
       return false;
     }
 
-    const entries = this.aiTriageEngine.buildRejectionTimelineEntries(
-      targetTicket,
-      trimmedReason,
-      this.currentTimeText()
-    );
-    this.appendTimelineEntries(ticketId, entries);
-    this.updateStatus(ticketId, 'Rejected');
-    return true;
+    try {
+      await this.dataSource.reject(targetTicket.backendId!, targetTicket.recommendationIds?.[this.picks()[ticketId] ?? 0], 'Desmond', trimmedReason);
+      this.appendTimelineEntries(ticketId, [
+        { time: this.currentTimeText(), actor: 'Dispatcher', text: `Rejected recommendation. Reason: ${trimmedReason}`, cls: 'no' },
+      ]);
+      this.updateStatus(ticketId, 'Rejected');
+      return true;
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'Rejection failed');
+      return false;
+    }
   }
 
-  takeOwnership(ticketId: string): boolean {
+  async takeOwnership(ticketId: string): Promise<boolean> {
     const targetTicket = this.tickets().find((t) => t.id === ticketId);
     if (!targetTicket) {
       return false;
     }
-    this.addTimeline(ticketId, 'Dispatcher', 'Took ownership of this case', 'hu');
-    this.updateStatus(ticketId, 'In progress');
-    return true;
+    try {
+      await this.dataSource.takeOwnership(targetTicket.backendId!, 'Desmond');
+      this.addTimeline(ticketId, 'Dispatcher', 'Took ownership of this case', 'hu');
+      this.updateStatus(ticketId, 'In progress');
+      return true;
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'Ownership update failed');
+      return false;
+    }
   }
 
-  markResolved(ticketId: string): boolean {
+  async markResolved(ticketId: string): Promise<boolean> {
     const targetTicket = this.tickets().find((t) => t.id === ticketId);
     if (!targetTicket || targetTicket.status === 'Resolved') {
       return false;
     }
-    this.addTimeline(ticketId, 'Dispatcher', 'Marked case as resolved', 'hu');
-    this.updateStatus(ticketId, 'Resolved');
-    return true;
+    try {
+      await this.dataSource.resolve(targetTicket.backendId!, 'Desmond');
+      this.addTimeline(ticketId, 'Dispatcher', 'Marked case as resolved', 'hu');
+      this.updateStatus(ticketId, 'Resolved');
+      return true;
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'Resolution failed');
+      return false;
+    }
+  }
+
+  private async loadTickets(): Promise<void> {
+    try {
+      this.tickets.set(await this.dataSource.loadTickets());
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'Unable to load cases');
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   private updateStatus(ticketId: string, next: TicketStatus): void {

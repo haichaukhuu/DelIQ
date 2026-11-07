@@ -76,7 +76,8 @@
               "buildTarget": "DelIQ:build:production"
             },
             "development": {
-              "buildTarget": "DelIQ:build:development"
+              "buildTarget": "DelIQ:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

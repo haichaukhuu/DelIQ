@@ -7,14 +7,14 @@ Supabase projects:
   `db/supabase/migrations/20261106231700_schema.sql`.
 - `PLATFORM_*` points to the read-only ERP/WMS/TMS simulator.
 
-The service-role keys must stay on the server and must never be placed in the
+The Supabase secret keys must stay on the server and must never be placed in the
 Angular application.
 
 ## Run locally
 
 ```powershell
 Copy-Item .env.example .env
-# Fill in both Supabase URLs and service-role keys in .env
+# Fill in both Supabase URLs and secret keys in .env
 npm install
 npm run dev
 ```
@@ -30,10 +30,13 @@ The API listens on `http://localhost:4000` by default.
 - `GET /api/source/orders/:orderNumber`
 - `GET /api/kpis`
 - `POST /api/cases/:id/ownership` with `{ "ownerName": "Erik" }`
+- `POST /api/cases/:id/resolve` with `{ "resolvedBy": "Erik" }` for Path C manual resolution
 - `POST /api/cases/:id/approvals` with
   `{ "recommendationId": "...", "decision": "APPROVED|REJECTED", "decidedBy": "...", "reason": "..." }`
 - `POST /api/issue-reports` with
   `{ "reportedBy": "...", "issueType": "...", "description": "...", "caseId": "..." }`
 
-All workflow mutations write to `deliq.audit_log`. The simulator endpoints
-only read the `core`, `commercial`, and `operations` schemas.
+All workflow mutations write to `deliq.audit_log`. Amber approvals are
+server-gated to `PENDING_APPROVAL` cases and the €100 per-case policy cap;
+Red cases cannot use the approval endpoint. The simulator endpoints only
+read the `core`, `commercial`, and `operations` schemas.

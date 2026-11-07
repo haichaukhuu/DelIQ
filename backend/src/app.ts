@@ -113,6 +113,14 @@ app.post('/api/cases/:id/approvals', asyncRoute(async (request, response) => {
   const decision = bodyString(request.body, 'decision', { required: true });
   if (decision !== 'APPROVED' && decision !== 'REJECTED') throw new Error('decision must be APPROVED or REJECTED');
   const id = paramString(request, 'id');
+  const caseRow = assertQuery<Record<string, any>>(await deliqDb.from('cases').select('autonomy_path,status').eq('id', id).single());
+  if (caseRow.autonomy_path !== 'AMBER') throw new Error('Only Amber cases can use dispatcher approval');
+  if (caseRow.status !== 'PENDING_APPROVAL') throw new Error('Case is not awaiting approval');
+  const recommendation = assertQuery<Record<string, any>>(await deliqDb.from('recommendations')
+    .select('estimated_cost').eq('id', recommendationId).eq('case_id', id).single());
+  if (decision === 'APPROVED' && Number(recommendation.estimated_cost) > 100) {
+    throw new Error('Amber execution exceeds the €100 per-case spending cap');
+  }
   const approval = assertQuery(await deliqDb.from('approvals').insert({
     case_id: id, recommendation_id: recommendationId, decision, decided_by: actor, reason,
   }).select().single());
@@ -133,6 +141,17 @@ app.post('/api/cases/:id/approvals', asyncRoute(async (request, response) => {
   await assertQuery(await deliqDb.from('cases').update({ status, resolved_at: decision === 'APPROVED' ? new Date().toISOString() : null }).eq('id', id).select().single());
   await writeAudit(id, actor, `APPROVAL_${decision}`, 'RECOMMENDATION', recommendationId, { reason });
   response.status(201).json(approval);
+}));
+
+app.post('/api/cases/:id/resolve', asyncRoute(async (request, response) => {
+  const actor = bodyString(request.body, 'resolvedBy', { required: true, maxLength: 120 })!;
+  const id = paramString(request, 'id');
+  const updated = assertQuery(await deliqDb.from('cases').update({
+    status: 'RESOLVED',
+    resolved_at: new Date().toISOString(),
+  }).eq('id', id).eq('autonomy_path', 'RED').select().single());
+  await writeAudit(id, actor, 'MANUAL_RESOLUTION', 'CASE', id, {});
+  response.json(updated);
 }));
 
 app.post('/api/issue-reports', asyncRoute(async (request, response) => {
